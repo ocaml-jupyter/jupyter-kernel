@@ -38,6 +38,6 @@ depopts: [
 ]
 tags: [ "jupyter" "ipython" ]
 homepage: "https://github.com/ocaml-jupyter/jupyter-kernel"
-available: [ocaml-version >= "4.00.0"]
+available: [ocaml-version >= "4.02.0"]
 dev-repo: "https://github.com/ocaml-jupyter/jupyter-kernel.git"
 bug-reports: "https://github.com/ocaml-jupyter/jupyter-kernel/issues"

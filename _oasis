@@ -19,7 +19,7 @@ Library jupyter_kernel
   Install:          true
   Modules:          Base64, Ipython_json_j, Ipython_json_t, Log,
                     Message, Sockets, Client
-  BuildDepends:     atdgen, yojson, uuidm, ZMQ, lwt-zmq, nocrypto, hex,
+  BuildDepends:     result, atdgen, yojson, uuidm, ZMQ, lwt-zmq, nocrypto, hex,
                     lwt, lwt.unix, lwt.preemptive, threads, lwt.ppx,
                     bytes, ISO8601
 
