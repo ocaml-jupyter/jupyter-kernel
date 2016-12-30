@@ -215,10 +215,11 @@ type shutdown = {
 (*********************************************************************)
 
 type display_data = {
-    dd_source <json name="source"> : string;
+    dd_source <json name="source"> : string; (* TODO remove *)
     dd_data <json name="data"> : dyn;
     dd_metadata <json name="metadata"> : dyn;
 }
+(* TODO: transient field for protocol 5.1 *)
 
 (*********************************************************************)
 (*********************************************************************)

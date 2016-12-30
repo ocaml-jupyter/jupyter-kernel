@@ -32,11 +32,16 @@ module Kernel : sig
   val ok : ?actions:exec_action list -> string option -> exec_status_ok
 
   type t = {
-    exec: count:int -> string -> exec_status Lwt.t;
-    is_complete: string -> is_complete_reply;
+    exec: count:int -> string -> exec_status Lwt.t; (* TODO: user expressions *)
+    is_complete: string -> is_complete_reply Lwt.t;
     language: string;
     language_version: int list;
+    banner: string option; (* displayed at startup *)
+    file_extension: string;
+    mime_type: string option; (* default: text/plain *)
     complete: pos:int -> string -> completion_status Lwt.t;
+    object_info: string -> detail:int -> Ipython_json_j.object_info_reply Lwt.t;
+    history: Ipython_json_j.history_request -> string list Lwt.t;
   }
 end
 

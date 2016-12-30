@@ -38,11 +38,16 @@ module Kernel = struct
   let ok ?(actions=[]) msg = {msg; actions}
 
   type t = {
-    exec: count:int -> string -> exec_status Lwt.t;
-    is_complete: string -> is_complete_reply;
+    exec: count:int -> string -> exec_status Lwt.t; (* TODO: user expressions *)
+    is_complete: string -> is_complete_reply Lwt.t;
     language: string;
     language_version: int list;
+    banner: string option; (* displayed at startup *)
+    file_extension: string;
+    mime_type: string option; (* default: text/plain *)
     complete: pos:int -> string -> completion_status Lwt.t;
+    object_info: string -> detail:int -> Ipython_json_j.object_info_reply Lwt.t;
+    history: Ipython_json_j.history_request -> string list Lwt.t;
   }
 end
 
@@ -246,7 +251,7 @@ let complete_request t ~parent (r:complete_request): unit Lwt.t =
   send_shell t ~parent (M.Complete_reply content)
 
 let is_complete_request t ~parent (r:is_complete_request): unit Lwt.t =
-  let st = t.kernel.Kernel.is_complete r.icr_code in
+  let%lwt st = t.kernel.Kernel.is_complete r.icr_code in
   let content = match st with
     | Kernel.Is_complete ->
       {icr_status="complete"; icr_indent=""}
@@ -255,13 +260,16 @@ let is_complete_request t ~parent (r:is_complete_request): unit Lwt.t =
   in
   send_shell t ~parent (M.Is_complete_reply content)
 
-let object_info_request _socket ~parent:_msg _x =
-  () (* TODO: doc? *)
+(* TODO: update json definitions, now called "inspect_request" *)
+let object_info_request (t:t) ~parent x =
+  let%lwt res = t.kernel.Kernel.object_info x.oname ~detail:x.detail_level in
+  send_shell t ~parent (M.Object_info_reply res)
 
-let connect_request _socket _msg = ()
+let connect_request _socket _msg = () (* XXX deprecated *)
 
-let history_request t ~parent _x =
-  let content = {history=[]} in
+let history_request t ~parent x =
+  let%lwt history = t.kernel.Kernel.history x in
+  let content = {history} in
   send_shell t ~parent (M.History_reply content)
 
 type run_result =
@@ -297,7 +305,8 @@ let run t : run_result Lwt.t =
       | M.Connect_request ->
         Log.log "warning: received deprecated connect_request";
         connect_request t m; Lwt.return_unit
-      | M.Object_info_request x -> object_info_request t ~parent:m x; Lwt.return_unit
+      | M.Object_info_request x ->
+        within_status t ~f:(fun () -> object_info_request t ~parent:m x)
       | M.Complete_request x ->
         within_status t ~f:(fun () -> complete_request t ~parent:m x)
       | M.Is_complete_request x ->
@@ -307,12 +316,13 @@ let run t : run_result Lwt.t =
       | M.Shutdown_request x -> shutdown_request t ~parent:m x
 
       (* messages we should not be getting *)
-      | M.Connect_reply(_) | M.Kernel_info_reply(_)
-      | M.Shutdown_reply(_) | M.Execute_reply(_)
-      | M.Object_info_reply(_) | M.Complete_reply(_) | M.Is_complete_reply _
-      | M.History_reply(_) | M.Status(_) | M.Execute_input _
-      | M.Execute_result _ | M.Stream(_) | M.Display_data(_)
-      | M.Execute_error _ | M.Clear(_) -> handle_invalid_message ()
+      | M.Connect_reply _ | M.Kernel_info_reply _
+      | M.Shutdown_reply _ | M.Execute_reply _
+      | M.Object_info_reply _ | M.Complete_reply _ | M.Is_complete_reply _
+      | M.History_reply _ | M.Status _ | M.Execute_input _
+      | M.Execute_result _ | M.Stream _ | M.Display_data _
+      | M.Execute_error _ | M.Clear _ ->
+        handle_invalid_message ()
 
       | M.Comm_open -> Lwt.return_unit
     end
