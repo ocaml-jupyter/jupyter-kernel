@@ -75,13 +75,13 @@ let string_of_iopub_message = function
     Printf.sprintf "send_mime %s %s (base64: %B)" ty cont b64
 
 (* encode mime data, wrap it into a message *)
-let mime_message_content mime_type base64 data : M.content =
+let mime_message_content (t:t) mime_type base64 data : M.content =
   let data =
     if not base64 then data
     else Base64.encode data
   in
   (Message.Display_data (Ipython_json_j.({
-       dd_source = "stimsym"; (* TODO *)
+       dd_source = t.kernel.Kernel.language;
        dd_data = `Assoc [mime_type,`String data];
        dd_metadata = `Assoc [];
      })))
@@ -106,7 +106,7 @@ let send_iopub (t:t) ?parent (m:iopub_message): unit Lwt.t =
   in
   let send_mime mime_type data base64 =
     (* send mime message *)
-    let content = mime_message_content mime_type base64 data in
+    let content = mime_message_content t mime_type base64 data in
     let msg_type = M.msg_type_of_content content in
     send_message msg_type content
   in
@@ -210,7 +210,7 @@ let kernel_info_request (t:t) ~parent =
   let str_of_version l = String.concat "." (List.map string_of_int l) in
   let%lwt _ =
     send_shell t ~parent (M.Kernel_info_reply {
-        implementation=t.kernel.Kernel.language;
+        implementation = t.kernel.Kernel.language;
         implementation_version="0.1.0";  (* TODO *)
         protocol_version = "5.0";
         language_info = {
