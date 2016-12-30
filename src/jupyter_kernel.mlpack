@@ -1,8 +1,8 @@
 # OASIS_START
-# DO NOT EDIT (digest: 5809d2e2f544272589f1f96b758f9140)
+# DO NOT EDIT (digest: 0a9cfaa9612364f1cb2d0b763384f1d4)
 Base64
-Ipython_json_j
-Ipython_json_t
+Protocol_j
+Protocol_t
 Log
 Message
 Sockets

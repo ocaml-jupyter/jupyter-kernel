@@ -8,7 +8,7 @@
  *
  *)
 
-open Ipython_json_t
+open Protocol_t
 
 type content =
   (* messages received from front end *)

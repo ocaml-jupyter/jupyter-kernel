@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: a13929d4f57134524270a5e580322046)
+# DO NOT EDIT (digest: 93231711ddbb61cf4ec33efb7ec12fbb)
 # Ignore VCS directories, you can use the same kind of rule outside
 # OASIS_START/STOP if you want to exclude directories that contains
 # useless stuff for the build process
@@ -32,6 +32,7 @@ true: annot, bin_annot
 <src/*.ml{,i,y}>: package(lwt.preemptive)
 <src/*.ml{,i,y}>: package(lwt.unix)
 <src/*.ml{,i,y}>: package(nocrypto)
+<src/*.ml{,i,y}>: package(result)
 <src/*.ml{,i,y}>: package(threads)
 <src/*.ml{,i,y}>: package(uuidm)
 <src/*.ml{,i,y}>: package(yojson)

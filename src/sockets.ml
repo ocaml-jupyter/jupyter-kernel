@@ -17,7 +17,7 @@ let version =
   [a;b]
 
 let addr conn port =
-  Ipython_json_j.(conn.transport ^ "://" ^ conn.ip ^ ":" ^ string_of_int port)
+  Protocol_j.(conn.transport ^ "://" ^ conn.ip ^ ":" ^ string_of_int port)
 
 let open_socket typ conn port =
   let socket = ZMQ.Socket.create context typ in
@@ -35,12 +35,13 @@ type t = {
 }
 
 let open_sockets conn =
-  Log.logf "open sockets `%s`\n" (Ipython_json_j.string_of_connection_info conn);
-  { shell = open_socket ZMQ.Socket.router conn conn.Ipython_json_j.shell_port;
-    control = open_socket ZMQ.Socket.router conn conn.Ipython_json_j.control_port;
-    stdin = open_socket ZMQ.Socket.router conn conn.Ipython_json_j.stdin_port;
-    iopub = open_socket ZMQ.Socket.pub conn conn.Ipython_json_j.iopub_port;
-    heartbeat = open_socket ZMQ.Socket.rep conn conn.Ipython_json_j.hb_port;
+  let open Protocol_j in
+  Log.logf "open sockets `%s`\n" (string_of_connection_info conn);
+  { shell = open_socket ZMQ.Socket.router conn conn.shell_port;
+    control = open_socket ZMQ.Socket.router conn conn.control_port;
+    stdin = open_socket ZMQ.Socket.router conn conn.stdin_port;
+    iopub = open_socket ZMQ.Socket.pub conn conn.iopub_port;
+    heartbeat = open_socket ZMQ.Socket.rep conn conn.hb_port;
   }
 
 let heartbeat (t:t) =

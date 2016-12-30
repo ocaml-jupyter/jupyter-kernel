@@ -4,7 +4,7 @@
 (** {1 Main Kernel Loop} *)
 
 open Lwt.Infix
-open Ipython_json_j
+open Protocol_j
 
 module M = Message
 
@@ -46,7 +46,9 @@ module Kernel = struct
     | Is_complete
     | Is_not_complete of string (* indent *)
 
-  type inspect_request = Ipython_json_j.inspect_request = {
+  type history_request = Protocol_j.history_request
+
+  type inspect_request = Protocol_j.inspect_request = {
     ir_code: string;
     ir_cursor_pos: int; (* cursor pos *)
     ir_detail_level: int; (* 0 or 1 *)
@@ -73,7 +75,7 @@ module Kernel = struct
     mime_type: string option; (* default: text/plain *)
     complete: pos:int -> string -> completion_status Lwt.t;
     inspect: inspect_request -> inspect_reply_ok or_error Lwt.t;
-    history: Ipython_json_j.history_request -> string list Lwt.t;
+    history: history_request -> string list Lwt.t;
   }
 
   let make
@@ -139,7 +141,7 @@ let dict_of_mime_bundle (l:mime_data_bundle): json =
 
 (* encode mime data, wrap it into a message *)
 let mime_message_content (m:mime_data_bundle) : M.content =
-  Message.Display_data (Ipython_json_j.({
+  Message.Display_data (Protocol_j.({
        dd_data = dict_of_mime_bundle m;
        dd_metadata = `Assoc [];
        dd_transient=None; (* TODO *)
@@ -317,7 +319,7 @@ let is_complete_request t ~parent (r:is_complete_request): unit Lwt.t =
   in
   send_shell t ~parent (M.Is_complete_reply content)
 
-let inspect_request (t:t) ~parent (r:Ipython_json_j.inspect_request) =
+let inspect_request (t:t) ~parent (r:Kernel.inspect_request) =
   let%lwt res = t.kernel.Kernel.inspect r in
   let content = match res with
     | Result.Ok r ->

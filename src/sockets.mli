@@ -20,7 +20,7 @@ type t = {
   heartbeat: [`Rep ] Lwt_zmq.Socket.t;
 }
 
-val open_sockets : Ipython_json_t.connection_info -> t
+val open_sockets : Protocol_t.connection_info -> t
 
 val heartbeat : t -> unit Lwt.t
 

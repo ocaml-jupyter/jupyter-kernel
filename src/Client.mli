@@ -38,7 +38,9 @@ module Kernel : sig
     | Is_complete
     | Is_not_complete of string (* indent *)
 
-  type inspect_request = Ipython_json_j.inspect_request = {
+  type history_request = Protocol_j.history_request
+
+  type inspect_request = Protocol_j.inspect_request = {
     ir_code: string;
     ir_cursor_pos: int; (* cursor pos *)
     ir_detail_level: int; (* 0 or 1 *)
@@ -64,7 +66,7 @@ module Kernel : sig
     mime_type: string option; (* default: text/plain *)
     complete: pos:int -> string -> completion_status Lwt.t;
     inspect: inspect_request -> inspect_reply_ok or_error Lwt.t;
-    history: Ipython_json_j.history_request -> string list Lwt.t;
+    history: history_request -> string list Lwt.t;
   }
 
   val make :
@@ -76,7 +78,7 @@ module Kernel : sig
     is_complete:(string -> is_complete_reply Lwt.t) ->
     complete:(pos:int -> string -> completion_status Lwt.t) ->
     inspect: (inspect_request -> inspect_reply_ok or_error Lwt.t) ->
-    history:(Ipython_json_j.history_request -> string list Lwt.t) ->
+    history:(history_request -> string list Lwt.t) ->
     exec:(count:int -> string -> exec_status_ok or_error Lwt.t) ->
     unit ->
     t
