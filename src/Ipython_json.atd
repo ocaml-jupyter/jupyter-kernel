@@ -65,47 +65,33 @@ type execute_reply = {
 }
 
 type execute_error = {
-    (* if there was an error *)
-    err_ename <json name ="ename"> : string;
-    err_evalue <json name ="evalue"> : string;
-    err_traceback <json name ="traceback"> : string list;
+  (* if there was an error *)
+  err_ename <json name ="ename"> : string;
+  err_evalue <json name ="evalue"> : string;
+  err_traceback <json name ="traceback"> : string list;
 }
 
 (*********************************************************************)
-(* object info *)
+(* introspection *)
 (*********************************************************************)
 
-type object_info_request = {
-    oname : string;
-    detail_level : int;
+type inspect_request = {
+  ir_code <json name="code"> : string;
+  ir_cursor_pos <json name="cursor_pos">: int; 
+  ~ir_detail_level <json name="detail_level">: int; (* 0 or 1, default 0 *)
 }
 
-type arg_spec = {
-    args : string list;
-    varargs : string;
-    varkw : string;
-    defaults : string list;
-}
-
-type object_info_reply = {
-    name : string;
-    found : bool;
-    ismagic : bool;
-    isalias : bool;
-    namespace : string;
-    type_name : string;
-    string_form : string;
-    base_class : string;
-    length : int;
-    oi_file <json name="file"> : string;
-    definition : string;
-    argspec : arg_spec;
-    init_definition : string;
-    docstring : string;
-    class_docstring : string;
-    call_def : string;
-    call_docstring : string;
-    oi_source <json name="source"> : string;
+(* TODO error cases *)
+type inspect_reply = {
+  ir_status <json name="status">: string;
+  (* if success *)
+  ?ir_found <json name="found">: bool option;
+  ?ir_data <json name="data">: dyn option;
+  ?ir_metadata <json name="metadata">: dyn option;
+  (* if there was an error *)
+  ?ir_ename <json name ="ename"> : string option;
+  ?ir_evalue <json name ="evalue"> : string option;
+  ?ir_traceback <json name ="traceback"> : string list option;
 }
 
 (** Multi-line input *)
@@ -215,11 +201,10 @@ type shutdown = {
 (*********************************************************************)
 
 type display_data = {
-    dd_source <json name="source"> : string; (* TODO remove *)
     dd_data <json name="data"> : dyn;
     dd_metadata <json name="metadata"> : dyn;
+    ?dd_transient <json name="transient">: dyn option;
 }
-(* TODO: transient field for protocol 5.1 *)
 
 (*********************************************************************)
 (*********************************************************************)

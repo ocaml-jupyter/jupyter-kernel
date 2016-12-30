@@ -10,9 +10,24 @@ module M = Message
 
 exception Restart
 
+(** {2 Prelude} *)
+
+type 'a or_error = ('a, string) Result.result
+
+type json = Yojson.Safe.json
+
+type mime_data = {
+  mime_type: string;
+  mime_content: string; (* raw content *)
+  mime_b64: bool; (* if true, content will be encoded with base64 *)
+}
+
+(* list of mime objects, all of distinct types *)
+type mime_data_bundle = mime_data list
+
 module Kernel = struct
   type exec_action =
-    | Mime of string * string * bool (* type, data, base64? *)
+    | Mime of mime_data_bundle
 
   type exec_status_ok = {
     msg: string option;
@@ -20,8 +35,6 @@ module Kernel = struct
     actions: exec_action list;
     (* other actions *)
   }
-
-  type exec_status = (exec_status_ok, string) Result.result
 
   type completion_status = {
     completion_matches: string list;
@@ -33,12 +46,25 @@ module Kernel = struct
     | Is_complete
     | Is_not_complete of string (* indent *)
 
-  let mime ?(base64=false) ~ty x = Mime (ty,x,base64)
+  type inspect_request = Ipython_json_j.inspect_request = {
+    ir_code: string;
+    ir_cursor_pos: int; (* cursor pos *)
+    ir_detail_level: int; (* 0 or 1 *)
+  }
+
+  type inspect_reply_ok = {
+    iro_status: string; (* "ok" or "error" *)
+    iro_found: bool;
+    iro_data: mime_data_bundle;
+  }
+
+  let mime ?(base64=false) ~ty x =
+    Mime [{mime_type=ty; mime_content=x; mime_b64=base64}]
 
   let ok ?(actions=[]) msg = {msg; actions}
 
   type t = {
-    exec: count:int -> string -> exec_status Lwt.t; (* TODO: user expressions *)
+    exec: count:int -> string -> exec_status_ok or_error Lwt.t; (* TODO: user expressions *)
     is_complete: string -> is_complete_reply Lwt.t;
     language: string;
     language_version: int list;
@@ -46,9 +72,25 @@ module Kernel = struct
     file_extension: string;
     mime_type: string option; (* default: text/plain *)
     complete: pos:int -> string -> completion_status Lwt.t;
-    object_info: string -> detail:int -> Ipython_json_j.object_info_reply Lwt.t;
+    inspect: inspect_request -> inspect_reply_ok or_error Lwt.t;
     history: Ipython_json_j.history_request -> string list Lwt.t;
   }
+
+  let make
+      ?banner
+      ?(file_extension=".txt")
+      ?mime_type
+      ~language_version
+      ~language
+      ~is_complete
+      ~complete
+      ~inspect
+      ~history
+      ~exec
+      () : t =
+    { banner; file_extension; mime_type; language; language_version;
+      is_complete; history; exec; complete; inspect;
+    }
 end
 
 type t = {
@@ -63,33 +105,45 @@ let make ?key sockets kernel : t =
 
 type iopub_message =
   | Iopub_send_message of Message.content
-  | Iopub_send_mime of
-        string (* type *)
-      * string (* content *)
-      * bool (* base64? *)
+  | Iopub_send_mime of mime_data_bundle
 
 let string_of_message content =
   let msg_type = M.msg_type_of_content content in
   Printf.sprintf "{`%s` content `%s`}"
     msg_type (M.json_of_content content)
 
+let string_of_mime_data (m:mime_data): string =
+  Printf.sprintf "mime{ty=%s; content=%S; base64=%B}"
+    m.mime_type m.mime_content m.mime_b64
+
+let string_of_mime_data_bundle l : string =
+  "[" ^ String.concat "\n" (List.map string_of_mime_data l) ^ "]"
+
 let string_of_iopub_message = function
   | Iopub_send_message content ->
     Printf.sprintf "send_message %s" (string_of_message content)
-  | Iopub_send_mime (ty,cont,b64) ->
-    Printf.sprintf "send_mime %s %s (base64: %B)" ty cont b64
+  | Iopub_send_mime l ->
+    Printf.sprintf "send_mime %s" (string_of_mime_data_bundle l)
+
+let dict_of_mime_bundle (l:mime_data_bundle): json =
+  let l =
+    l
+    |> List.map (fun m ->
+      let data =
+        if not m.mime_b64 then m.mime_content
+        else Base64.encode m.mime_content
+      in
+      m.mime_type, `String data)
+  in
+  `Assoc l
 
 (* encode mime data, wrap it into a message *)
-let mime_message_content (t:t) mime_type base64 data : M.content =
-  let data =
-    if not base64 then data
-    else Base64.encode data
-  in
-  (Message.Display_data (Ipython_json_j.({
-       dd_source = t.kernel.Kernel.language;
-       dd_data = `Assoc [mime_type,`String data];
+let mime_message_content (m:mime_data_bundle) : M.content =
+  Message.Display_data (Ipython_json_j.({
+       dd_data = dict_of_mime_bundle m;
        dd_metadata = `Assoc [];
-     })))
+       dd_transient=None; (* TODO *)
+     }))
 
 let send_shell (t:t) ~parent (content:M.content): unit Lwt.t =
   Log.logf "send_shell `%s`\n" (string_of_message content);
@@ -109,9 +163,9 @@ let send_iopub (t:t) ?parent (m:iopub_message): unit Lwt.t =
     in
     M.send ?key:t.key socket msg'
   in
-  let send_mime mime_type data base64 =
+  let send_mime (l:mime_data_bundle) =
     (* send mime message *)
-    let content = mime_message_content t mime_type base64 data in
+    let content = mime_message_content l in
     let msg_type = M.msg_type_of_content content in
     send_message msg_type content
   in
@@ -119,8 +173,8 @@ let send_iopub (t:t) ?parent (m:iopub_message): unit Lwt.t =
     | Iopub_send_message content ->
       let msg_type = M.msg_type_of_content content in
       send_message msg_type content
-    | Iopub_send_mime (mime_type,data,base64) ->
-      send_mime mime_type data base64
+    | Iopub_send_mime l ->
+      send_mime l
   end
 
 (* run [f ()] in a "status:busy" context *)
@@ -167,11 +221,8 @@ let execute_request (t:t) ~parent e : unit Lwt.t =
               po_data = `Assoc ["text/plain", `String msg];
               po_metadata = `Assoc []; }))
       >|= fun _ -> ()
-  and side_action (s:Kernel.exec_action) : unit Lwt.t =
-    let ty, payload, b64 = match s with
-      | Kernel.Mime (ty,s,b64) -> ty, s, b64
-    in
-    send_iopub t ~parent (Iopub_send_mime (ty, payload, b64))
+  and side_action (s:Kernel.exec_action) : unit Lwt.t = match s with
+    | Kernel.Mime l -> send_iopub t ~parent (Iopub_send_mime l)
   in
   let%lwt () = match status with
     | Result.Ok ok ->
@@ -216,15 +267,21 @@ let kernel_info_request (t:t) ~parent =
   let%lwt _ =
     send_shell t ~parent (M.Kernel_info_reply {
         implementation = t.kernel.Kernel.language;
-        implementation_version="0.1.0";  (* TODO *)
+        implementation_version =
+          str_of_version t.kernel.Kernel.language_version;
         protocol_version = "5.0";
         language_info = {
           li_name = t.kernel.Kernel.language;
           li_version = str_of_version t.kernel.Kernel.language_version;
-          li_mimetype="text";
-          li_file_extension=".txt"; (* TODO *)
+          li_mimetype=(match t.kernel.Kernel.mime_type with
+            | Some m -> m
+            | None -> "text"
+          );
+          li_file_extension=t.kernel.Kernel.file_extension;
         };
-        banner=""; (* TODO *)
+        banner= (match t.kernel.Kernel.banner with
+          | None -> ""
+          | Some b -> b);
         help_links=[];
       })
   in
@@ -260,10 +317,27 @@ let is_complete_request t ~parent (r:is_complete_request): unit Lwt.t =
   in
   send_shell t ~parent (M.Is_complete_reply content)
 
-(* TODO: update json definitions, now called "inspect_request" *)
-let object_info_request (t:t) ~parent x =
-  let%lwt res = t.kernel.Kernel.object_info x.oname ~detail:x.detail_level in
-  send_shell t ~parent (M.Object_info_reply res)
+let inspect_request (t:t) ~parent (r:Ipython_json_j.inspect_request) =
+  let%lwt res = t.kernel.Kernel.inspect r in
+  let content = match res with
+    | Result.Ok r ->
+      {
+        ir_status = "ok";
+        ir_found = Some r.Kernel.iro_found;
+        ir_data = Some (dict_of_mime_bundle r.Kernel.iro_data);
+        ir_metadata=None; (* TODO *)
+        ir_ename =None; ir_evalue=None; ir_traceback=None;
+      }
+    | Result.Error err_msg ->
+      {
+        ir_status = "error";
+        ir_found=None; ir_data=None; ir_metadata=None;
+        ir_ename = Some "error";
+        ir_evalue = Some err_msg;
+        ir_traceback = Some ["<inspect_request>"];
+      }
+  in
+  send_shell t ~parent (M.Inspect_reply content)
 
 let connect_request _socket _msg = () (* XXX deprecated *)
 
@@ -305,8 +379,8 @@ let run t : run_result Lwt.t =
       | M.Connect_request ->
         Log.log "warning: received deprecated connect_request";
         connect_request t m; Lwt.return_unit
-      | M.Object_info_request x ->
-        within_status t ~f:(fun () -> object_info_request t ~parent:m x)
+      | M.Inspect_request x ->
+        within_status t ~f:(fun () -> inspect_request t ~parent:m x)
       | M.Complete_request x ->
         within_status t ~f:(fun () -> complete_request t ~parent:m x)
       | M.Is_complete_request x ->
@@ -318,7 +392,7 @@ let run t : run_result Lwt.t =
       (* messages we should not be getting *)
       | M.Connect_reply _ | M.Kernel_info_reply _
       | M.Shutdown_reply _ | M.Execute_reply _
-      | M.Object_info_reply _ | M.Complete_reply _ | M.Is_complete_reply _
+      | M.Inspect_reply _ | M.Complete_reply _ | M.Is_complete_reply _
       | M.History_reply _ | M.Status _ | M.Execute_input _
       | M.Execute_result _ | M.Stream _ | M.Display_data _
       | M.Execute_error _ | M.Clear _ ->
