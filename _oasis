@@ -15,6 +15,7 @@ Synopsis:  A library for writing jupyter kernels
 Library jupyter_kernel
   Path:             src/
   Pack:             true
+  FindlibName:      jupyter-kernel
   Install:          true
   Modules:          Base64, Ipython_json_j, Ipython_json_t, Log,
                     Message, Sockets, Client
