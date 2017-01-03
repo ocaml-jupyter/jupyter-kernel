@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 93231711ddbb61cf4ec33efb7ec12fbb)
+# DO NOT EDIT (digest: cbef42f7023c8864b2ad3710ad6527d8)
 # Ignore VCS directories, you can use the same kind of rule outside
 # OASIS_START/STOP if you want to exclude directories that contains
 # useless stuff for the build process
@@ -21,6 +21,7 @@ true: annot, bin_annot
 "src/message.cmx": for-pack(Jupyter_kernel)
 "src/sockets.cmx": for-pack(Jupyter_kernel)
 "src/Client.cmx": for-pack(Jupyter_kernel)
+"src/Client_main.cmx": for-pack(Jupyter_kernel)
 <src/*.ml{,i,y}>: package(ISO8601)
 <src/*.ml{,i,y}>: package(ZMQ)
 <src/*.ml{,i,y}>: package(atdgen)
