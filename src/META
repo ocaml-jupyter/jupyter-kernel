@@ -1,9 +1,9 @@
 # OASIS_START
-# DO NOT EDIT (digest: c2a15696d31ac41baadcb564eb215f99)
+# DO NOT EDIT (digest: 3b7506fc4d7b07b0db18fc1d69780293)
 version = "0.1"
 description = "A library for writing jupyter kernels"
 requires =
-"result atdgen yojson uuidm ZMQ lwt-zmq nocrypto hex lwt lwt.unix lwt.preemptive threads lwt.ppx bytes ISO8601"
+"result atdgen yojson uuidm ZMQ lwt-zmq nocrypto hex lwt lwt.unix lwt.preemptive threads lwt.ppx bytes ISO8601 base64"
 archive(byte) = "jupyter_kernel.cma"
 archive(byte, plugin) = "jupyter_kernel.cma"
 archive(native) = "jupyter_kernel.cmxa"

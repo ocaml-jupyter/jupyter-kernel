@@ -133,7 +133,7 @@ let dict_of_mime_bundle (l:mime_data_bundle): json =
     |> List.map (fun m ->
       let data =
         if not m.mime_b64 then m.mime_content
-        else Base64.encode m.mime_content
+        else B64.encode m.mime_content
       in
       m.mime_type, `String data)
   in
