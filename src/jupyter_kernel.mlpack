@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 0a9cfaa9612364f1cb2d0b763384f1d4)
+# DO NOT EDIT (digest: 3d8c3f12e47850dad8c6bca1f825e87f)
 Base64
 Protocol_j
 Protocol_t
@@ -7,4 +7,5 @@ Log
 Message
 Sockets
 Client
+Client_main
 # OASIS_STOP

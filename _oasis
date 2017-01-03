@@ -18,7 +18,7 @@ Library jupyter_kernel
   FindlibName:      jupyter-kernel
   Install:          true
   Modules:          Base64, Protocol_j, Protocol_t, Log,
-                    Message, Sockets, Client
+                    Message, Sockets, Client, Client_main
   BuildDepends:     result, atdgen, yojson, uuidm, ZMQ, lwt-zmq, nocrypto, hex,
                     lwt, lwt.unix, lwt.preemptive, threads, lwt.ppx,
                     bytes, ISO8601
