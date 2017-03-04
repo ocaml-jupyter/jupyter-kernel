@@ -33,6 +33,7 @@ depends: [
     "lwt-zmq"
     "nocrypto"
     "hex"
+    "ISO8601"
 ]
 depopts: [
 ]
