@@ -66,6 +66,7 @@ module Kernel = struct
   let ok ?(actions=[]) msg = {msg; actions}
 
   type t = {
+    init: unit -> unit Lwt.t;
     exec: count:int -> string -> exec_status_ok or_error Lwt.t; (* TODO: user expressions *)
     is_complete: string -> is_complete_reply Lwt.t;
     language: string;
@@ -82,6 +83,7 @@ module Kernel = struct
       ?banner
       ?(file_extension=".txt")
       ?mime_type
+      ?(init=fun () -> Lwt.return_unit)
       ~language_version
       ~language
       ~is_complete
@@ -91,7 +93,7 @@ module Kernel = struct
       ~exec
       () : t =
     { banner; file_extension; mime_type; language; language_version;
-      is_complete; history; exec; complete; inspect;
+      is_complete; history; exec; complete; inspect; init;
     }
 end
 
@@ -352,16 +354,18 @@ type run_result =
   | Run_stop
   | Run_restart
 
-let run t : run_result Lwt.t =
+let run (t:t) : run_result Lwt.t =
   let () = Sys.catch_break true in
   Log.log "run on sockets...\n";
   let heartbeat =
     Sockets.heartbeat t.sockets >|= fun () -> Run_stop
   in
-  let%lwt _ =
+  let%lwt () =
     send_iopub t
       (Iopub_send_message (M.Status { execution_state = "starting" }))
   in
+  (* initialize *)
+  let%lwt () = t.kernel.Kernel.init () in
   let handle_message () =
     let open Sockets in
     let%lwt m = Lwt.pick

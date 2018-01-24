@@ -57,6 +57,7 @@ module Kernel : sig
   val ok : ?actions:exec_action list -> string option -> exec_status_ok
 
   type t = {
+    init: unit -> unit Lwt.t;
     exec: count:int -> string -> exec_status_ok or_error Lwt.t; (* TODO: user expressions *)
     is_complete: string -> is_complete_reply Lwt.t;
     language: string;
@@ -73,6 +74,7 @@ module Kernel : sig
     ?banner:string ->
     ?file_extension:string ->
     ?mime_type:string ->
+    ?init:(unit -> unit Lwt.t) ->
     language_version:int list ->
     language:string ->
     is_complete:(string -> is_complete_reply Lwt.t) ->
