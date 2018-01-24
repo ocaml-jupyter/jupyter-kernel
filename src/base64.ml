@@ -43,9 +43,9 @@ let decode x : string =
     let x = (n lsr 16) land 255
     and y = (n lsr 8) land 255
     and z = n land 255 in
-    output.[3 * i + 0] <- char_of_int x;
-    if i <> words - 1 || padding < 2 then output.[3 * i + 1] <- char_of_int y;
-    if i <> words - 1 || padding < 1 then output.[3 * i + 2] <- char_of_int z;
+    Bytes.set output (3 * i + 0) @@ char_of_int x;
+    if i <> words - 1 || padding < 2 then Bytes.set output (3 * i + 1) @@ char_of_int y;
+    if i <> words - 1 || padding < 1 then Bytes.set output (3 * i + 2) @@ char_of_int z;
   done;
   Bytes.to_string output
 
@@ -64,13 +64,13 @@ let encode x : string =
     and b = (n lsr 12) land 63
     and c = (n lsr 6) land 63
     and d = n land 63 in
-    output.[4 * i + 0] <- to_char a;
-    output.[4 * i + 1] <- to_char b;
-    output.[4 * i + 2] <- to_char c;
-    output.[4 * i + 3] <- to_char d;
+    Bytes.set output (4 * i + 0) @@ to_char a;
+    Bytes.set output (4 * i + 1) @@ to_char b;
+    Bytes.set output (4 * i + 2) @@ to_char c;
+    Bytes.set output (4 * i + 3) @@ to_char d;
   done;
   for i = 1 to padding do
-    output.[Bytes.length output - i] <- '=';
+    Bytes.set output (Bytes.length output - i) '=';
   done;
   Bytes.to_string output
 
