@@ -69,3 +69,6 @@ val send : ?key:string -> [<`Router|`Pub] Lwt_zmq.Socket.t -> t -> unit Lwt.t
 (** [send sock msg] sends the message.
     @param key the shared key for signing messages *)
 
+
+val wrap_retry : ('a -> 'b Lwt.t) -> 'a -> 'b Lwt.t
+(** Wrapper to retry upon EAGAIN *)

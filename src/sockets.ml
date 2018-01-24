@@ -48,9 +48,9 @@ let heartbeat (t:t) =
   Log.log "listening for hearbeat requests\n";
   let%lwt () =
     while%lwt true do
-      let%lwt data = Lwt_zmq.Socket.recv t.heartbeat in
+      let%lwt data = Message.wrap_retry Lwt_zmq.Socket.recv t.heartbeat in
       Log.log "Heartbeat\n";
-      Lwt_zmq.Socket.send t.heartbeat data
+      Message.wrap_retry (Lwt_zmq.Socket.send t.heartbeat) data
     done
   in
   (* XXX close down properly...we never get here *)
@@ -59,7 +59,7 @@ let heartbeat (t:t) =
 
 let dump name socket =
   while%lwt true do
-    let%lwt msg = Message.recv socket in
+    let%lwt msg = Message.wrap_retry Message.recv socket in
     let () = Message.log name msg in
     Lwt.return ()
   done
