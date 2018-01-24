@@ -169,10 +169,8 @@ let dec_utf8 x = x
 
 let recv socket : t Lwt.t =
   let%lwt msg = wrap_retry Lwt_zmq.Socket.recv_all socket in
-  (*let () =
-      Log.log (Printf.sprintf "recv: %i frame(s)\n" (List.length msg));
-      List.iter (fun s -> Log.log (s ^ "\n")) msg
-    in*)
+  Log.log (Printf.sprintf "recv: %i frame(s)\n" (List.length msg));
+  List.iter (fun s -> Log.log (s ^ "\n")) msg;
   let msg = List.map dec_utf8 msg in
   let rec split ids = function
     | [] -> failwith "couldn't find <IDS|MSG> marker"
@@ -183,7 +181,7 @@ let recv socket : t Lwt.t =
   let len = Array.length data in
   let header = header_info_of_string data.(1) in
   assert (len >= 5);
-  (*let () = Log.log ("RECV:\n" ^ data.(4) ^ "\n") in*)
+  Log.log ("RECV:\n" ^ data.(4) ^ "\n") ;
   let msg = {
     ids = ids;
     hmac = data.(0);
@@ -193,7 +191,7 @@ let recv socket : t Lwt.t =
     content = content_of_json header data.(4);
     raw = Array.init (len-5) (fun i -> data.(i+5))
   } in
-  (* log "RECV" msg; *)
+  log "RECV" msg;
   Lwt.return msg
 
 let send ?key socket msg : unit Lwt.t =
@@ -213,7 +211,7 @@ let send ?key socket msg : unit Lwt.t =
       let `Hex s = Hex.of_cstruct res in
       s
   in
-  (* log "SEND" {msg with hmac}; *)
+  log "SEND" {msg with hmac};
   wrap_retry (Lwt_zmq.Socket.send_all socket) (List.concat [
       Array.to_list (Array.map enc_utf8 msg.ids);
       [enc_utf8 "<IDS|MSG>"];
