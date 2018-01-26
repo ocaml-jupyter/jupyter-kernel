@@ -84,12 +84,13 @@ module Kernel = struct
       ?(file_extension=".txt")
       ?mime_type
       ?(init=fun () -> Lwt.return_unit)
+      ?(is_complete=fun _ -> Lwt.return Is_complete)
+      ?(complete=fun ~pos i->
+        Lwt.return {completion_matches=[]; completion_start=pos;completion_end=pos})
+      ?(inspect=fun _ -> Lwt.return (Error "no inspection implemented"))
+      ?(history=fun _ -> Lwt.return [])
       ~language_version
       ~language
-      ~is_complete
-      ~complete
-      ~inspect
-      ~history
       ~exec
       () : t =
     { banner; file_extension; mime_type; language; language_version;
