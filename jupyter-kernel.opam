@@ -23,6 +23,7 @@ depends: [
     "ISO8601"
 ]
 depopts: [
+  "tyxml"
 ]
 tags: [ "jupyter" "ipython" ]
 homepage: "https://github.com/ocaml-jupyter/jupyter-kernel"
