@@ -295,7 +295,11 @@ let kernel_info_request (t:t) ~parent =
 let shutdown_request (t:t) ~parent (r:shutdown) : 'a Lwt.t =
   Log.log "received shutdown request...\n";
   let%lwt () =
-    send_shell t ~parent (M.Shutdown_reply r)
+    Lwt.catch
+      (fun () -> send_shell t ~parent (M.Shutdown_reply r))
+      (fun e ->
+         Log.logf "exn %s when replying to shutdown request" (Printexc.to_string e);
+         Lwt.return_unit)
   in
   Lwt.fail (if r.restart then Restart else Exit)
 
@@ -409,17 +413,21 @@ let run (t:t) : run_result Lwt.t =
     end
   in
   let rec run () =
-    try%lwt
-      handle_message() >>= run
-    with
-      | Sys.Break ->
-        Log.log "Sys.Break\n";
-        run ()
-      | Restart ->
-        Log.log "Restart\n";
-        Lwt.return Run_restart
-      | Exit ->
-        Log.log "Exiting, as requested\n";
-        Lwt.return Run_stop
+    begin
+      try%lwt
+        handle_message() >|= fun _ -> Ok ()
+      with
+        | Sys.Break ->
+          Log.log "Sys.Break\n";
+          Lwt.return_ok ()
+        | Restart ->
+          Log.log "Restart\n";
+          Lwt.return_error Run_restart
+        | Exit ->
+          Log.log "Exiting, as requested\n";
+          Lwt.return_error Run_stop
+    end >>= function
+    | Ok () -> run()
+    | Error e -> Lwt.return e
   in
   Lwt.pick [run (); heartbeat]
