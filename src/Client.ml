@@ -3,6 +3,7 @@
 
 (** {1 Main Kernel Loop} *)
 
+open Result
 open Lwt.Infix
 open Protocol_j
 
@@ -12,7 +13,7 @@ exception Restart
 
 (** {2 Prelude} *)
 
-type 'a or_error = ('a, string) Result.result
+type 'a or_error = ('a, string) result
 
 type json = Yojson.Safe.json
 
@@ -232,7 +233,7 @@ let execute_request (t:t) ~parent e : unit Lwt.t =
     | Kernel.Mime l -> send_iopub t ~parent (Iopub_send_mime l)
   in
   let%lwt () = match status with
-    | Result.Ok ok ->
+    | Ok ok ->
       let%lwt () =
         send_shell t ~parent
           (M.Execute_reply {
@@ -245,7 +246,7 @@ let execute_request (t:t) ~parent e : unit Lwt.t =
       let%lwt _ = reply_status_ok ok.Kernel.msg in
       (* send mime type in the background *)
       Lwt_list.iter_p side_action ok.Kernel.actions
-    | Result.Error err_msg ->
+    | Error err_msg ->
       let content =
         M.Execute_reply {
             status = "error";
@@ -332,7 +333,7 @@ let is_complete_request t ~parent (r:is_complete_request): unit Lwt.t =
 let inspect_request (t:t) ~parent (r:Kernel.inspect_request) =
   let%lwt res = t.kernel.Kernel.inspect r in
   let content = match res with
-    | Result.Ok r ->
+    | Ok r ->
       {
         ir_status = "ok";
         ir_found = Some r.Kernel.iro_found;
@@ -340,7 +341,7 @@ let inspect_request (t:t) ~parent (r:Kernel.inspect_request) =
         ir_metadata=None; (* TODO *)
         ir_ename =None; ir_evalue=None; ir_traceback=None;
       }
-    | Result.Error err_msg ->
+    | Error err_msg ->
       {
         ir_status = "error";
         ir_found=None; ir_data=None; ir_metadata=None;
