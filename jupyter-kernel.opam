@@ -13,7 +13,7 @@ depends: [
     "result"
     "base-unix"
     "zmq"
-    "atdgen"
+    "atdgen" {build}
     "yojson"
     "uuidm"
     "lwt"
