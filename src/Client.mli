@@ -71,6 +71,7 @@ module Kernel : sig
     banner: string option; (* displayed at startup *)
     file_extension: string;
     mime_type: string option; (* default: text/plain *)
+    codemirror_mode: string option; (* client side syntax highlighting mode *)
     complete: pos:int -> string -> completion_status Lwt.t;
     inspect: inspect_request -> inspect_reply_ok or_error Lwt.t;
     history: history_request -> string list Lwt.t;
@@ -80,6 +81,7 @@ module Kernel : sig
     ?banner:string ->
     ?file_extension:string ->
     ?mime_type:string ->
+    ?codemirror_mode:string ->
     ?init:(unit -> unit Lwt.t) ->
     ?is_complete:(string -> is_complete_reply Lwt.t) ->
     ?complete:(pos:int -> string -> completion_status Lwt.t) ->

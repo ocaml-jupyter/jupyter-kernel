@@ -74,6 +74,7 @@ module Kernel = struct
     banner: string option; (* displayed at startup *)
     file_extension: string;
     mime_type: string option; (* default: text/plain *)
+    codemirror_mode: string option;
     complete: pos:int -> string -> completion_status Lwt.t;
     inspect: inspect_request -> inspect_reply_ok or_error Lwt.t;
     history: history_request -> string list Lwt.t;
@@ -83,6 +84,7 @@ module Kernel = struct
       ?banner
       ?(file_extension=".txt")
       ?mime_type
+      ?codemirror_mode
       ?(init=fun () -> Lwt.return_unit)
       ?(is_complete=fun _ -> Lwt.return Is_complete)
       ?(complete=fun ~pos i->
@@ -94,7 +96,7 @@ module Kernel = struct
       ~exec
       () : t =
     { banner; file_extension; mime_type; language; language_version;
-      is_complete; history; exec; complete; inspect; init;
+      is_complete; history; exec; complete; inspect; init; codemirror_mode
     }
 end
 
@@ -283,6 +285,7 @@ let kernel_info_request (t:t) ~parent =
             | None -> "text"
           );
           li_file_extension=t.kernel.Kernel.file_extension;
+          li_codemirror_mode=t.kernel.Kernel.codemirror_mode;
         };
         banner= (match t.kernel.Kernel.banner with
           | None -> ""
