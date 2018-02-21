@@ -316,12 +316,50 @@ let shutdown_request (t:t) ~parent (r:shutdown) : 'a Lwt.t =
 let handle_invalid_message () =
   Lwt.fail (Failure "Invalid message on shell socket")
 
+(* translate positions in codepoints, to positions in bytes offset *)
+let byte_pos_of_utf_pos s ~cursor_pos : int =
+  let dec = Uutf.decoder ~encoding:`UTF_8 (`String s) in
+  let rec iter n =
+    if n=0 then Uutf.decoder_byte_count dec (* done *)
+    else match Uutf.decode dec with
+      | `Await -> assert false
+      | `End -> String.length s + 1 (* out of range *)
+      | `Malformed _ ->
+        (* skip malformed substring *)
+        iter (n-1)
+      | `Uchar _ ->
+        iter (n-1)
+  in
+  assert (cursor_pos >= 0);
+  iter cursor_pos
+
+(* translate positions in byte offsets, to positions in codepoints *)
+let utf_pos_of_byte_pos s ~pos : int =
+  let dec = Uutf.decoder ~encoding:`UTF_8 (`String s) in
+  let rec iter n =
+    if Uutf.decoder_byte_count dec >= pos
+    then Uutf.decoder_count dec (* done *)
+    else match Uutf.decode dec with
+      | `Await -> assert false
+      | `End -> Uutf.decoder_count dec + 1 (* out of range *)
+      | `Malformed _ ->
+        (* skip malformed substring *)
+        iter (n-1)
+      | `Uchar _ ->
+        iter (n-1)
+  in
+  assert (pos >= 0);
+  iter pos
+
 let complete_request t ~parent (r:complete_request): unit Lwt.t =
-  let%lwt st = t.kernel.Kernel.complete ~pos:r.cursor_pos r.line in
+  let%lwt st =
+    let pos = byte_pos_of_utf_pos ~cursor_pos:r.cursor_pos r.line in
+    t.kernel.Kernel.complete ~pos r.line
+  in
   let content = {
     matches=st.Kernel.completion_matches;
-    cursor_start=st.Kernel.completion_start;
-    cursor_end=st.Kernel.completion_end;
+    cursor_start=utf_pos_of_byte_pos r.line ~pos:st.Kernel.completion_start;
+    cursor_end=utf_pos_of_byte_pos r.line ~pos:st.Kernel.completion_end;
     cr_status="ok";
   } in
   send_shell t ~parent (M.Complete_reply content)
@@ -337,7 +375,10 @@ let is_complete_request t ~parent (r:is_complete_request): unit Lwt.t =
   send_shell t ~parent (M.Is_complete_reply content)
 
 let inspect_request (t:t) ~parent (r:Kernel.inspect_request) =
-  let%lwt res = t.kernel.Kernel.inspect r in
+  let%lwt res =
+    let pos = byte_pos_of_utf_pos ~cursor_pos:r.ir_cursor_pos r.ir_code in
+    t.kernel.Kernel.inspect {r with ir_cursor_pos=pos}
+  in
   let content = match res with
     | Ok r ->
       {
@@ -394,7 +435,7 @@ let run (t:t) : run_result Lwt.t =
       | M.Kernel_info_request ->
         within_status t
           ~f:(fun () -> kernel_info_request t ~parent:m)
-      | M.Comm_info_request x -> Lwt.return_unit
+      | M.Comm_info_request _r -> comm_info_request t ~parent:m
       | M.Execute_request x ->
         within_status t
           ~f:(fun () -> execute_request t ~parent:m x)

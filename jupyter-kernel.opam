@@ -21,6 +21,7 @@ depends: [
     "nocrypto"
     "hex"
     "ISO8601"
+    "uutf"
 ]
 depopts: [
   "tyxml"

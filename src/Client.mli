@@ -48,7 +48,7 @@ module Kernel : sig
 
   type inspect_request = Protocol_j.inspect_request = {
     ir_code: string;
-    ir_cursor_pos: int; (* cursor pos *)
+    ir_cursor_pos: int; (* cursor pos, as offset in bytes *)
     ir_detail_level: int; (* 0 or 1 *)
   }
 
@@ -72,7 +72,7 @@ module Kernel : sig
     file_extension: string;
     mime_type: string option; (* default: text/plain *)
     codemirror_mode: string option; (* client side syntax highlighting mode *)
-    complete: pos:int -> string -> completion_status Lwt.t;
+    complete: pos:int -> string -> completion_status Lwt.t; (* [pos]: offset in bytes in string *)
     inspect: inspect_request -> inspect_reply_ok or_error Lwt.t;
     history: history_request -> string list Lwt.t;
   }
