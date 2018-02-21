@@ -13,6 +13,7 @@ open Protocol_t
 type content =
   (* messages received from front end *)
   | Connect_request
+  | Comm_info_request of comm_info_request
   | Kernel_info_request
   | Shutdown_request of shutdown
   | Execute_request of execute_request
@@ -22,6 +23,7 @@ type content =
   | History_request of history_request
   (* messages sent to front end *)
   | Connect_reply of connect_reply
+  | Comm_info_reply
   | Kernel_info_reply of kernel_info_reply
   | Shutdown_reply of shutdown
   | Execute_reply of execute_reply

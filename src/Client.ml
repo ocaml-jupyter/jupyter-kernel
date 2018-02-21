@@ -296,6 +296,12 @@ let kernel_info_request (t:t) ~parent =
   in
   Lwt.return_unit
 
+let comm_info_request (t:t) ~parent =
+  let%lwt _ =
+    send_shell t ~parent M.Comm_info_reply
+  in
+  Lwt.return_unit
+
 let shutdown_request (t:t) ~parent (r:shutdown) : 'a Lwt.t =
   Log.log "received shutdown request...\n";
   let%lwt () =
@@ -388,6 +394,7 @@ let run (t:t) : run_result Lwt.t =
       | M.Kernel_info_request ->
         within_status t
           ~f:(fun () -> kernel_info_request t ~parent:m)
+      | M.Comm_info_request x -> Lwt.return_unit
       | M.Execute_request x ->
         within_status t
           ~f:(fun () -> execute_request t ~parent:m x)
