@@ -417,7 +417,7 @@ let run (t:t) : run_result Lwt.t =
       | M.Inspect_reply _ | M.Complete_reply _ | M.Is_complete_reply _
       | M.History_reply _ | M.Status _ | M.Execute_input _
       | M.Execute_result _ | M.Stream _ | M.Display_data _
-      | M.Execute_error _ | M.Clear _ ->
+      | M.Execute_error _ | M.Clear _ | M.Comm_info_reply ->
         handle_invalid_message ()
 
       | M.Comm_open -> Lwt.return_unit
