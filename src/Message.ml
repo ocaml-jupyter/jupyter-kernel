@@ -13,6 +13,7 @@ open Protocol_j
 type content =
   (* messages received from front end *)
   | Connect_request
+  | Comm_info_request of comm_info_request
   | Kernel_info_request
   | Shutdown_request of shutdown
   | Execute_request of execute_request
@@ -22,6 +23,7 @@ type content =
   | History_request of history_request
   (* messages sent to front end *)
   | Connect_reply of connect_reply
+  | Comm_info_reply
   | Kernel_info_reply of kernel_info_reply
   | Shutdown_reply of shutdown
   | Execute_reply of execute_reply
@@ -43,6 +45,7 @@ type content =
 let content_of_json hdr c =
   match hdr.msg_type with
     | "connect_request" -> Connect_request
+    | "comm_info_request" -> Comm_info_request(comm_info_request_of_string c)
     | "kernel_info_request" -> Kernel_info_request
     | "shutdown_request" -> Shutdown_request(shutdown_of_string c)
     | "execute_request" -> Execute_request(execute_request_of_string c)
@@ -52,6 +55,7 @@ let content_of_json hdr c =
     | "history_request" -> History_request(history_request_of_string c)
 
     | "connect_reply" -> Connect_reply(connect_reply_of_string c)
+    | "comm_info_reply" -> Comm_info_reply
     | "kernel_info_reply" -> Kernel_info_reply(kernel_info_reply_of_string c)
     | "shutdown_reply" -> Shutdown_reply(shutdown_of_string c)
     | "execute_reply" -> Execute_reply(execute_reply_of_string c)
@@ -71,6 +75,7 @@ let content_of_json hdr c =
 
 let json_of_content = function
   | Connect_request -> "{}"
+  | Comm_info_request(x) -> string_of_comm_info_request x
   | Kernel_info_request -> "{}"
   | Shutdown_request(x) -> string_of_shutdown x
   | Execute_request(x) -> string_of_execute_request x
@@ -80,6 +85,7 @@ let json_of_content = function
   | History_request(x) -> string_of_history_request x
 
   | Connect_reply(x) -> string_of_connect_reply x
+  | Comm_info_reply -> "{\"comms\": {}}"
   | Kernel_info_reply(x) -> string_of_kernel_info_reply x
   | Shutdown_reply(x) -> string_of_shutdown x
   | Execute_reply(x) -> string_of_execute_reply x
@@ -100,6 +106,7 @@ let json_of_content = function
 
 let msg_type_of_content = function
   | Connect_request -> "connect_request"
+  | Comm_info_request(_) -> "comm_info_request"
   | Kernel_info_request -> "kernel_info_request"
   | Shutdown_request(_) -> "shutdown_request"
   | Execute_request(_) -> "execute_request"
@@ -109,6 +116,7 @@ let msg_type_of_content = function
   | History_request(_) -> "history_request"
 
   | Connect_reply(_) -> "connect_reply"
+  | Comm_info_reply(_) -> "comm_info_reply"
   | Kernel_info_reply(_) -> "kernel_info_reply"
   | Shutdown_reply(_) -> "shutdown_reply"
   | Execute_reply(_) -> "execute_reply"
