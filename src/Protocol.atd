@@ -164,6 +164,7 @@ type language_info = {
   li_version <json name="version">: string; (* a.b.c *)
   li_mimetype <json name="mimetype">: string;
   li_file_extension <json name="file_extension">: string;
+  ?li_codemirror_mode <json name="codemirror_mode">: string option;
 }
 
 type help_link = {
