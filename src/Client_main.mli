@@ -3,6 +3,7 @@
 
 val main :
   ?args:(Arg.key * Arg.spec * Arg.doc) list ->
+  ?post_init:(unit -> unit Lwt.t) ->
   usage:string ->
   Client.Kernel.t ->
   unit Lwt.t
@@ -14,5 +15,6 @@ val main :
     - Individual connection parameters with [--ci-<foo> <bar>];
     - See [--help] for more details;
     - The parameter [args] can contain additional command line arguments.
+    - The parameter [post_init] will be run after arg parse but before the main loop.
 *)
 
