@@ -12,10 +12,6 @@ let context = ZMQ.Context.create ()
 let () = at_exit
     (fun () -> ZMQ.Context.terminate context)
 
-let version =
-  let a, b, _ = ZMQ.version () in
-  [a;b]
-
 let addr conn port =
   Protocol_j.(conn.transport ^ "://" ^ conn.ip ^ ":" ^ string_of_int port)
 

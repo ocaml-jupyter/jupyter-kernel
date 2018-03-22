@@ -8,8 +8,6 @@ open Lwt.Infix
 module C = Client
 module Proto_j = Protocol_j
 
-let output_cell_max_height = ref "100px"
-
 (*******************************************************************************)
 (* command line *)
 
@@ -75,7 +73,7 @@ let mk_connection_info () : Proto_j.connection_info =
     conn
   )
 
-let rec main_loop connection_info kernel =
+let main_loop connection_info kernel =
   try%lwt
     let sockets = Sockets.open_sockets connection_info in
     let key = connection_info.Proto_j.key in
@@ -103,13 +101,12 @@ let main ?(args=[]) ?post_init ~usage kernel =
   let connection_info = mk_connection_info () in
   let%lwt() = Lwt_io.printf "Starting kernel for `%s`\n" kernel.C.Kernel.language in
 
-  begin
-    match post_init with
+  let%lwt() = match post_init with
     | None -> Lwt.return ()
     | Some f ->
       Log.log "Running post_init...\n";
       f ()
-  end;
+  in
 
   Log.log "start main...\n";
   main_loop connection_info kernel >|= fun () ->

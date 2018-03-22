@@ -88,7 +88,7 @@ module Kernel = struct
       ?codemirror_mode
       ?(init=fun () -> Lwt.return_unit)
       ?(is_complete=fun _ -> Lwt.return Is_complete)
-      ?(complete=fun ~pos i->
+      ?(complete=fun ~pos _i ->
         Lwt.return {completion_matches=[]; completion_start=pos;completion_end=pos})
       ?(inspect=fun _ -> Lwt.return (Error "no inspection implemented"))
       ?(history=fun _ -> Lwt.return [])

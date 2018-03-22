@@ -116,7 +116,7 @@ let msg_type_of_content = function
   | History_request(_) -> "history_request"
 
   | Connect_reply(_) -> "connect_reply"
-  | Comm_info_reply(_) -> "comm_info_reply"
+  | Comm_info_reply  -> "comm_info_reply"
   | Kernel_info_reply(_) -> "kernel_info_reply"
   | Shutdown_reply(_) -> "shutdown_reply"
   | Execute_reply(_) -> "execute_reply"
@@ -134,13 +134,6 @@ let msg_type_of_content = function
   | Display_data(_) -> "display_data"
 
   | Comm_open -> "comm_open"
-
-(* information used to generate a message *)
-type context = {
-  ctx_key: string;
-  ctx_session: string; (* unique session *)
-  ctx_user: string;
-}
 
 type t = {
   ids : string array;
