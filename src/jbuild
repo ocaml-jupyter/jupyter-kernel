@@ -4,9 +4,9 @@
    (public_name jupyter-kernel)
    (libraries (result atdgen yojson uuidm ZMQ lwt-zmq
                nocrypto hex lwt lwt.unix lwt.preemptive threads
-               lwt.ppx bytes uutf ISO8601))
+               lwt_ppx bytes uutf ISO8601))
    (flags (:standard -safe-string -w +a-4-44@8))
-   (preprocess (pps (lwt.ppx)))
+   (preprocess (pps (lwt_ppx)))
   ))
 
 (rule

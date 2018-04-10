@@ -17,6 +17,7 @@ depends: [
     "yojson"
     "uuidm"
     "lwt"
+    "lwt_ppx"
     "lwt-zmq"
     "nocrypto"
     "hex"
