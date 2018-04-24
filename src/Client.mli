@@ -16,6 +16,8 @@ type mime_data = {
 (* list of mime objects, all of distinct types *)
 type mime_data_bundle = mime_data list
 
+exception Restart
+
 (** {2 User-Defined Kernel} *)
 module Kernel : sig
   type exec_action =
