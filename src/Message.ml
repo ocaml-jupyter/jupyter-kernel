@@ -242,7 +242,7 @@ let make ~parent ~msg_type content = {
 }
 
 let empty_header : header_info = {
-  version = ""; date=""; username=""; msg_type=""; msg_id = ""; session="";
+  version = ""; date=""; username=(Some ""); msg_type=""; msg_id = ""; session=(Some "");
 }
 
 let mk_header msg_type : header_info = {

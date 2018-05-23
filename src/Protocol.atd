@@ -27,8 +27,8 @@ type connection_info = {
 type header_info = {
     ~date : string;
     ~version: string;
-    ~username : string;
-    ~session : string;
+    ?username : string option;
+    ?session : string option;
     ~msg_id : string;
     ~msg_type : string;
 }
