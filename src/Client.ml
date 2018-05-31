@@ -186,16 +186,16 @@ let send_iopub (t:t) ?parent (m:iopub_message): unit Lwt.t =
   end
 
 (* run [f ()] in a "status:busy" context *)
-let within_status (t:t) ~f =
+let within_status ~parent (t:t) ~f =
   (* set state to busy *)
   let%lwt _ =
-    send_iopub t
+    send_iopub ~parent t
       (Iopub_send_message (M.Status { execution_state = "busy" }))
   in
   Lwt.finalize
     f
     (fun () ->
-       send_iopub t
+       send_iopub ~parent t
          (Iopub_send_message
           (M.Status { execution_state = "idle" })))
 
@@ -433,23 +433,23 @@ let run (t:t) : run_result Lwt.t =
       (M.json_of_content m.M.content);
     begin match m.M.content with
       | M.Kernel_info_request ->
-        within_status t
+        within_status ~parent:m t
           ~f:(fun () -> kernel_info_request t ~parent:m)
       | M.Comm_info_request _r -> comm_info_request t ~parent:m
       | M.Execute_request x ->
-        within_status t
+        within_status ~parent:m t
           ~f:(fun () -> execute_request t ~parent:m x)
       | M.Connect_request ->
         Log.log "warning: received deprecated connect_request";
         connect_request t m; Lwt.return_unit
       | M.Inspect_request x ->
-        within_status t ~f:(fun () -> inspect_request t ~parent:m x)
+        within_status ~parent:m t ~f:(fun () -> inspect_request t ~parent:m x)
       | M.Complete_request x ->
-        within_status t ~f:(fun () -> complete_request t ~parent:m x)
+        within_status ~parent:m t ~f:(fun () -> complete_request t ~parent:m x)
       | M.Is_complete_request x ->
-        within_status t ~f:(fun () -> is_complete_request t ~parent:m x)
+        within_status ~parent:m t ~f:(fun () -> is_complete_request t ~parent:m x)
       | M.History_request x ->
-        within_status t ~f:(fun () -> history_request t ~parent:m x)
+        within_status ~parent:m t ~f:(fun () -> history_request t ~parent:m x)
       | M.Shutdown_request x -> shutdown_request t ~parent:m x
 
       (* messages we should not be getting *)
