@@ -92,22 +92,15 @@ let main_loop connection_info kernel =
     Log.log "Dying.\n";
     Lwt.fail Exit
 
-let main ?(args=[]) ?post_init ~usage kernel =
+let main ?(args=[]) ~usage ~kernel_init =
   let args = mk_args ~args () in
   Arg.parse
     args
     (fun s -> failwith ("invalid anonymous argument: " ^ s))
     usage;
   let connection_info = mk_connection_info () in
+  let%lwt kernel = kernel_init () in
   let%lwt() = Lwt_io.printf "Starting kernel for `%s`\n" kernel.C.Kernel.language in
-
-  let%lwt() = match post_init with
-    | None -> Lwt.return ()
-    | Some f ->
-      Log.log "Running post_init...\n";
-      f ()
-  in
-
   Log.log "start main...\n";
   main_loop connection_info kernel >|= fun () ->
   Log.log "client_main: exiting\n"
