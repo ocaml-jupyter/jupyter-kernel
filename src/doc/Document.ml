@@ -30,7 +30,6 @@ let paragraph_f s = ksprintf ~f:paragraph s
 let indent i j = `I (i,j)
 let pre s = `Pre s
 let pre_f s = ksprintf ~f:pre s
-let sub l = `Sub l
 let list l = `L l
 
 let pp_list_ p =

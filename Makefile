@@ -2,10 +2,10 @@
 all: build
 
 build:
-	jbuilder build @install
+	@dune build @install
 
 clean:
-	jbuilder clean
+	@dune clean
 
 watch:
 	while find src/ -print0 | xargs -0 inotifywait -e delete_self -e modify ; do \
