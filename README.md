@@ -1,5 +1,7 @@
 # Jupyter-Kernel
 
+[![build status](https://travis-ci.org/ocaml-jupyter/jupyter-kernel.svg?branch=master)](https://travis-ci.org/ocaml-jupyter/jupyter-kernel)
+
 A library for writing [Jupyter](https://jupyter.org) kernels in OCaml
 
 ## Install a Kernel
