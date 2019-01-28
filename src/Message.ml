@@ -205,14 +205,9 @@ let send ?key socket msg : unit Lwt.t =
   let hmac = match key with
     | None -> msg.hmac
     | Some k ->
-      let c =
-        Cstruct.concat
-          (List.map (fun s->Cstruct.of_string s)
-             [header; parent; meta; content])
-      in
-      let res = Nocrypto.Hash.mac ~key:(Cstruct.of_string k) `SHA256 c in
-      let `Hex s = Hex.of_cstruct res in
-      s
+      let c = fun yield -> List.iter yield [header; parent; meta; content] in
+      Digestif.hmaci_string ~key:k Digestif.SHA256 c
+      |> Digestif.to_hex Digestif.SHA256
   in
   (* log "SEND" {msg with hmac}; *)
   wrap_retry (Lwt_zmq.Socket.send_all socket) (List.concat [
