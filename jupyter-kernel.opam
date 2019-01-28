@@ -21,8 +21,7 @@ depends: [
     "lwt"
     "lwt_ppx"
     "lwt-zmq"
-    "nocrypto"
-    "hex"
+    "digestif"
     "ISO8601"
     "uutf"
     "ocaml" {>= "4.02.0"}
