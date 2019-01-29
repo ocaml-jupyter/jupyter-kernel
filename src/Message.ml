@@ -206,8 +206,7 @@ let send ?key socket msg : unit Lwt.t =
     | None -> msg.hmac
     | Some k ->
       let c = fun yield -> List.iter yield [header; parent; meta; content] in
-      Digestif.hmaci_string ~key:k Digestif.SHA256 c
-      |> Digestif.to_hex Digestif.SHA256
+      Digestif.SHA256.(hmaci_string ~key:k c |> to_hex)
   in
   (* log "SEND" {msg with hmac}; *)
   wrap_retry (Lwt_zmq.Socket.send_all socket) (List.concat [
