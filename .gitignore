@@ -11,3 +11,4 @@ qtest*
 *.html
 .merlin
 *.install
+_opam/
