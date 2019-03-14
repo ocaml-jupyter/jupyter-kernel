@@ -10,6 +10,10 @@ A library for writing [Jupyter](https://jupyter.org) kernels in OCaml
 jupyter kernelspec install dir/containing/kernel/ --user --replace --name=<name>
 ```
 
+## Documentation
+
+https://ocaml-jupyter.github.io/jupyter-kernel/
+
 ## Related work
 
 This project is a library for *writing Jupyter kernels in OCaml*.
