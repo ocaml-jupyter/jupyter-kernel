@@ -8,6 +8,7 @@
  *
  *)
 
+open Lwt.Infix
 open Protocol_j
 
 type content =
@@ -146,10 +147,11 @@ type t = {
 }
 
 let rec wrap_retry f s =
-  try%lwt f s
-  with
-    | Lwt_unix.Retry
-    | Unix.Unix_error (Unix.EAGAIN, _, _) -> wrap_retry f s
+  Lwt.catch (fun () -> f s)
+    (function
+      | Lwt_unix.Retry
+      | Unix.Unix_error (Unix.EAGAIN, _, _) -> wrap_retry f s
+      | e -> Lwt.fail e)
 
 let log prefix msg =
   let open Printf in
@@ -169,7 +171,7 @@ let enc_utf8 x = x
 let dec_utf8 x = x
 
 let recv socket : t Lwt.t =
-  let%lwt msg = wrap_retry Lwt_zmq.Socket.recv_all socket in
+  wrap_retry Lwt_zmq.Socket.recv_all socket >>= fun msg ->
   (*let () =
       Log.log (Printf.sprintf "recv: %i frame(s)\n" (List.length msg));
       List.iter (fun s -> Log.log (s ^ "\n")) msg

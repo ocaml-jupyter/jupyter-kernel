@@ -8,6 +8,8 @@
  *
  *)
 
+open Lwt.Infix
+
 let context = ZMQ.Context.create ()
 let () = at_exit
     (fun () -> ZMQ.Context.terminate context)
@@ -54,20 +56,21 @@ let close_sockets (t:t) : unit Lwt.t =
 
 let heartbeat (t:t) =
   Log.log "listening for hearbeat requests\n";
-  let%lwt () =
-    while%lwt true do
-      let%lwt data = Message.wrap_retry Lwt_zmq.Socket.recv t.heartbeat in
-      Log.log "Heartbeat\n";
-      Message.wrap_retry (Lwt_zmq.Socket.send t.heartbeat) data
-    done
+  let rec loop() =
+    Message.wrap_retry Lwt_zmq.Socket.recv t.heartbeat >>= fun data ->
+    Log.log "Heartbeat\n";
+    Message.wrap_retry (Lwt_zmq.Socket.send t.heartbeat) data >>= fun () ->
+    loop()
   in
+  loop () >>= fun () ->
   (* XXX close down properly...we never get here *)
   ZMQ.Socket.close (Lwt_zmq.Socket.to_socket t.heartbeat);
   Lwt.return ()
 
 let dump name socket =
-  while%lwt true do
-    let%lwt msg = Message.wrap_retry Message.recv socket in
+  let rec loop () =
+    Message.wrap_retry Message.recv socket >>= fun msg ->
     let () = Message.log name msg in
-    Lwt.return ()
-  done
+    loop()
+  in
+  loop()
