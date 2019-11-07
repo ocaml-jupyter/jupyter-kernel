@@ -19,7 +19,6 @@ depends: [
     "yojson"
     "uuidm"
     "lwt"
-    "lwt_ppx"
     "lwt-zmq"
     "digestif"
     "ISO8601"

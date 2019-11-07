@@ -188,10 +188,9 @@ let send_iopub (t:t) ?parent (m:iopub_message): unit Lwt.t =
 (* run [f ()] in a "status:busy" context *)
 let within_status ~parent (t:t) ~f =
   (* set state to busy *)
-  let%lwt _ =
-    send_iopub ~parent t
-      (Iopub_send_message (M.Status { execution_state = "busy" }))
-  in
+  send_iopub ~parent t
+    (Iopub_send_message (M.Status { execution_state = "busy" }))
+  >>= fun () ->
   Lwt.finalize
     f
     (fun () ->
@@ -208,16 +207,16 @@ let execute_request (t:t) ~parent e : unit Lwt.t =
 
   let execution_count = t.e_count in
 
-  let%lwt _ = send_iopub t ~parent
+  send_iopub t ~parent
       (Iopub_send_message
         (M.Execute_input {
             pi_code = e.code;
             pi_execution_count = execution_count;
           }))
-  in
+  >>= fun () ->
 
   (* eval code *)
-  let%lwt status = t.kernel.Kernel.exec ~count:execution_count e.code in
+  t.kernel.Kernel.exec ~count:execution_count e.code >>= fun status ->
 
   (* in case of success, how to print *)
   let reply_status_ok (s:string option) = match s with
@@ -232,18 +231,18 @@ let execute_request (t:t) ~parent e : unit Lwt.t =
   and side_action (s:Kernel.exec_action) : unit Lwt.t = match s with
     | Kernel.Mime l -> send_iopub t ~parent (Iopub_send_mime l)
   in
-  let%lwt () = match status with
+  begin match status with
     | Ok ok ->
-      let%lwt () =
-        send_shell t ~parent
-          (M.Execute_reply {
-              status = "ok";
-              execution_count;
-              ename = None; evalue = None; traceback = None; payload = None;
-              er_user_expressions = None;
-            })
-      in
-      let%lwt _ = reply_status_ok ok.Kernel.msg in
+      send_shell t ~parent
+        (M.Execute_reply {
+            status = "ok";
+            execution_count;
+            ename = None; evalue = None; traceback = None; payload = None;
+            er_user_expressions = None;
+          })
+      >>= fun () ->
+      reply_status_ok ok.Kernel.msg
+      >>= fun () ->
       (* send mime type in the background *)
       Lwt_list.iter_p side_action ok.Kernel.actions
     | Error err_msg ->
@@ -257,7 +256,8 @@ let execute_request (t:t) ~parent e : unit Lwt.t =
         }
       in
       Log.logf "send ERROR `%s`\n" (M.json_of_content content);
-      let%lwt () = send_shell t ~parent content in
+      send_shell t ~parent content
+      >>=fun () ->
       send_iopub t ~parent
         (Iopub_send_message (M.Execute_error {
              err_ename="error";
@@ -267,12 +267,11 @@ let execute_request (t:t) ~parent e : unit Lwt.t =
                "evaluating " ^ e.code;
              ];
            }))
-  in
-  Lwt.return_unit
+  end
 
 let kernel_info_request (t:t) ~parent =
   let str_of_version l = String.concat "." (List.map string_of_int l) in
-  let%lwt _ =
+  begin
     send_shell t ~parent (M.Kernel_info_reply {
         implementation = t.kernel.Kernel.language;
         implementation_version =
@@ -293,24 +292,19 @@ let kernel_info_request (t:t) ~parent =
           | Some b -> b);
         help_links=[];
       })
-  in
-  Lwt.return_unit
+  end
 
 let comm_info_request (t:t) ~parent =
-  let%lwt _ =
-    send_shell t ~parent M.Comm_info_reply
-  in
-  Lwt.return_unit
+  send_shell t ~parent M.Comm_info_reply
 
 let shutdown_request (t:t) ~parent (r:shutdown) : 'a Lwt.t =
   Log.log "received shutdown request...\n";
-  let%lwt () =
-    Lwt.catch
+  Lwt.catch
       (fun () -> send_shell t ~parent (M.Shutdown_reply r))
       (fun e ->
          Log.logf "exn %s when replying to shutdown request" (Printexc.to_string e);
          Lwt.return_unit)
-  in
+  >>= fun () ->
   Lwt.fail (if r.restart then Restart else Exit)
 
 let handle_invalid_message () =
@@ -352,10 +346,10 @@ let utf_pos_of_byte_pos s ~pos : int =
   iter pos
 
 let complete_request t ~parent (r:complete_request): unit Lwt.t =
-  let%lwt st =
+  begin
     let pos = byte_pos_of_utf_pos ~cursor_pos:r.cursor_pos r.line in
     t.kernel.Kernel.complete ~pos r.line
-  in
+  end >>= fun st ->
   let content = {
     matches=st.Kernel.completion_matches;
     cursor_start=utf_pos_of_byte_pos r.line ~pos:st.Kernel.completion_start;
@@ -365,7 +359,8 @@ let complete_request t ~parent (r:complete_request): unit Lwt.t =
   send_shell t ~parent (M.Complete_reply content)
 
 let is_complete_request t ~parent (r:is_complete_request): unit Lwt.t =
-  let%lwt st = t.kernel.Kernel.is_complete r.icr_code in
+  t.kernel.Kernel.is_complete r.icr_code
+  >>= fun st ->
   let content = match st with
     | Kernel.Is_complete ->
       {icr_status="complete"; icr_indent=""}
@@ -375,10 +370,10 @@ let is_complete_request t ~parent (r:is_complete_request): unit Lwt.t =
   send_shell t ~parent (M.Is_complete_reply content)
 
 let inspect_request (t:t) ~parent (r:Kernel.inspect_request) =
-  let%lwt res =
+  begin
     let pos = byte_pos_of_utf_pos ~cursor_pos:r.ir_cursor_pos r.ir_code in
     t.kernel.Kernel.inspect {r with ir_cursor_pos=pos}
-  in
+  end >>= fun res ->
   let content = match res with
     | Ok r ->
       {
@@ -402,7 +397,7 @@ let inspect_request (t:t) ~parent (r:Kernel.inspect_request) =
 let connect_request _socket _msg = () (* XXX deprecated *)
 
 let history_request t ~parent x =
-  let%lwt history = t.kernel.Kernel.history x in
+  t.kernel.Kernel.history x >>= fun history ->
   let content = {history} in
   send_shell t ~parent (M.History_reply content)
 
@@ -416,18 +411,19 @@ let run (t:t) : run_result Lwt.t =
   let heartbeat =
     Sockets.heartbeat t.sockets >|= fun () -> Run_stop
   in
-  let%lwt () =
-    send_iopub t
-      (Iopub_send_message (M.Status { execution_state = "starting" }))
-  in
+  send_iopub t
+    (Iopub_send_message (M.Status { execution_state = "starting" }))
+  >>= fun () ->
   (* initialize *)
-  let%lwt () = t.kernel.Kernel.init () in
+  t.kernel.Kernel.init ()
+  >>= fun () ->
   let handle_message () =
     let open Sockets in
-    let%lwt m = Lwt.pick
+    Lwt.pick
         [ M.recv t.sockets.shell;
           M.recv t.sockets.control;
-        ] in
+        ]
+    >>= fun m ->
     Log.logf "received message `%s`, content `%s`\n"
       (M.msg_type_of_content m.M.content)
       (M.json_of_content m.M.content);
@@ -466,9 +462,9 @@ let run (t:t) : run_result Lwt.t =
   in
   let rec run () =
     begin
-      try%lwt
-        handle_message() >|= fun _ -> Ok ()
-      with
+      Lwt.catch
+        (fun () -> handle_message() >|= fun _ -> Ok ())
+        (function
         | Sys.Break ->
           Log.log "Sys.Break\n";
           Lwt.return_ok ()
@@ -478,6 +474,7 @@ let run (t:t) : run_result Lwt.t =
         | Exit ->
           Log.log "Exiting, as requested\n";
           Lwt.return_error Run_stop
+        | e -> Lwt.fail e)
     end >>= function
     | Ok () -> run()
     | Error e -> Lwt.return e

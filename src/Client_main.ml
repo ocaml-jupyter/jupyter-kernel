@@ -74,7 +74,7 @@ let mk_connection_info () : Proto_j.connection_info =
   )
 
 let main_loop connection_info kernel =
-  try%lwt
+  Lwt.catch (fun () ->
     let sockets = Sockets.open_sockets connection_info in
     let key = connection_info.Proto_j.key in
     let key = if key="" then None else Some key in
@@ -86,11 +86,11 @@ let main_loop connection_info kernel =
       Sockets.close_sockets sockets
     | C.Run_restart ->
       Log.log "Done (restart).\n";
-      Sockets.close_sockets sockets
-  with e ->
-    Log.log (Printf.sprintf "Exception: %s\n" (Printexc.to_string e));
-    Log.log "Dying.\n";
-    Lwt.fail Exit
+      Sockets.close_sockets sockets)
+    (fun e ->
+      Log.log (Printf.sprintf "Exception: %s\n" (Printexc.to_string e));
+      Log.log "Dying.\n";
+      Lwt.fail Exit)
 
 type config = { connection_info: Proto_j.connection_info }
 
@@ -103,7 +103,7 @@ let mk_config ?(additional_args=[]) ~usage () : config =
   { connection_info = mk_connection_info () }
 
 let main ~(config : config) ~kernel =
-  let%lwt() = Lwt_io.printf "Starting kernel for `%s`\n" kernel.C.Kernel.language in
+  Lwt_io.printf "Starting kernel for `%s`\n" kernel.C.Kernel.language >>= fun () ->
   Log.log "start main...\n";
   main_loop config.connection_info kernel >|= fun () ->
   Log.log "client_main: exiting\n"
