@@ -8,7 +8,7 @@
  *
  *)
 
-type dyn <ocaml module="Yojson.Safe" t="json"> = abstract
+type dyn <ocaml module="Yojson.Safe" t="t"> = abstract
 
 (* connection information provided by file in $(PROFILE)/secutiry *)
 type connection_info = {

@@ -16,14 +16,14 @@ depends: [
     "base-unix"
     "zmq"
     "atdgen"
-    "yojson"
+    "yojson" { >= "1.6" }
     "uuidm"
     "lwt"
     "lwt-zmq"
     "digestif"
     "ISO8601"
     "uutf"
-    "ocaml" {>= "4.02.0"}
+    "ocaml" {>= "4.03"}
 ]
 depopts: [
   "tyxml"

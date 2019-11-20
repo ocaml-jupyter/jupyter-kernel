@@ -1,4 +1,3 @@
-
 (* This file is free software. See file "license" for more details. *)
 
 (** {1 Main Kernel Loop} *)
@@ -15,7 +14,7 @@ exception Restart
 
 type 'a or_error = ('a, string) result
 
-type json = Yojson.Safe.json
+type json = Yojson.Safe.t
 
 type mime_data = {
   mime_type: string;
