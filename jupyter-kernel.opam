@@ -9,7 +9,7 @@ build: [
   ["dune" "build" "@doc" "-p" name] {with-doc}
 ]
 depends: [
-    "dune" {build}
+    "dune" { >= "1.1" }
     "odoc" {with-doc}
     "base-bytes"
     "result"
