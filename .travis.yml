@@ -7,10 +7,11 @@ env:
   global:
   - PINS="jupyter-kernel:."
   - DISTRO="ubuntu-16.04"
+  - PACKAGE="jupyter-kernel" 
   matrix:
-  - PACKAGE="jupyter-kernel" OCAML_VERSION="4.03"
-  - PACKAGE="jupyter-kernel" OCAML_VERSION="4.04"
+  - OCAML_VERSION="4.03"
+  - OCAML_VERSION="4.04"
     #- PACKAGE="jupyter-kernel" OCAML_VERSION="4.05"
-  - PACKAGE="jupyter-kernel" OCAML_VERSION="4.06"
-  - PACKAGE="jupyter-kernel" OCAML_VERSION="4.07"
-    #- PACKAGE="oseq" OCAML_VERSION="4.02" DEPOPTS="gen qtest qcheck containers odoc"
+  - OCAML_VERSION="4.06"
+  - OCAML_VERSION="4.07"
+  - OCAML_VERSION="4.09"
