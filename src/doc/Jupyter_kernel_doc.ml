@@ -1,4 +1,3 @@
-
 module Document = Document
 
 module C = Jupyter_kernel.Client
@@ -27,19 +26,19 @@ let to_html : Document.t -> [<Html_types.div] H.elt =
     H.div (List.map (aux_block ~depth) doc)
   and aux_block ~depth (b:Document.block) =
     let h = match b with
-      | `S s -> mk_header ~depth [H.pcdata s]
-      | `P s -> H.p [H.pcdata s]
-      | `Pre s -> H.pre [H.pcdata s]
+      | `S s -> mk_header ~depth [H.txt s]
+      | `P s -> H.p [H.txt s]
+      | `Pre s -> H.pre [H.txt s]
       | `L l ->
         H.ul (List.map (fun sub -> H.li [aux ~depth sub]) l)
       | `I (s,sub) ->
         let depth = depth+1 in
         H.div (
-          mk_header ~depth [H.pcdata s] :: List.map (aux_block ~depth) sub
+          mk_header ~depth [H.txt s] :: List.map (aux_block ~depth) sub
         )
       | `Tbl (heads, rows) ->
         let thead =
-          let l = List.map (fun s -> H.th [H.pcdata s]) heads in
+          let l = List.map (fun s -> H.th [H.txt s]) heads in
           H.thead [H.tr l]
         and rows =
           let depth=depth+1 in
