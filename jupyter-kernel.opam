@@ -23,6 +23,7 @@ depends: [
     "digestif"
     "ISO8601"
     "uutf"
+    "logs"
     "ocaml" {>= "4.03"}
 ]
 depopts: [

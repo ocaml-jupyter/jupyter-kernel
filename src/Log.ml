@@ -8,20 +8,26 @@
  *
  *)
 
-let log' = ref (fun _s -> ())
+let src = Logs.Src.create ~doc:"jupyter kernel logs" "jupyter-kernel"
 
-let time() = 
-  let open Unix in
-  let tm = localtime (time ()) in
-  Printf.sprintf "%i/%i/%i %.2i:%.2i:%.2i" 
-    tm.tm_mday (tm.tm_mon+1) (tm.tm_year+1900) tm.tm_hour tm.tm_min tm.tm_sec
+let combine_reporters r1 r2 =
+  let report = fun src level ~over k msgf ->
+    let v = r1.Logs.report src level ~over:(fun () -> ()) k msgf in
+    r2.Logs.report src level ~over (fun () -> v) msgf
+  in
+  { Logs.report }
+
+let file_reporter s : Logs.reporter = 
+  let flog = open_out_gen [Open_text;Open_creat;Open_append] 0o666 s in
+  let () = at_exit (fun () -> flush flog; close_out flog) in
+  let fmt = Format.formatter_of_out_channel flog in
+  let rep = Logs.format_reporter ~app:fmt ~dst:fmt () in
+  rep
 
 let open_log_file s = 
-  let flog = open_out_gen [Open_text;Open_creat;Open_append] 0o666 s in
-  let () = at_exit (fun () -> close_out flog) in
-  log' := (fun s -> Printf.fprintf flog "[%s] %s%!" (time()) s);
-  !log' (Printf.sprintf "ocaml-jupyter-kernel log file: %s\n" (time()))
+  Logs.set_reporter (combine_reporters (Logs.reporter ()) @@ file_reporter s); 
+  Logs.info ~src (fun k->k "open file %S for logging" s);
+  ()
 
-let log s = !log' s
-
+let log s = Logs.debug ~src (fun k->k "%s" s)
 let logf s = Printf.ksprintf log s

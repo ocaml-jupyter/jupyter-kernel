@@ -4,7 +4,7 @@
   (public_name jupyter-kernel)
   (libraries result atdgen yojson uuidm ZMQ lwt-zmq
              digestif.c lwt lwt.unix threads
-             bytes uutf ISO8601)
+             bytes uutf ISO8601 logs)
   (flags :standard -safe-string -warn-error -3))
 
 (rule
