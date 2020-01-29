@@ -31,3 +31,5 @@ let open_log_file s =
 
 let log s = Logs.debug ~src (fun k->k "%s" s)
 let logf s = Printf.ksprintf log s
+
+include (val Logs.src_log src)

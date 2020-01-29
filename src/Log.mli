@@ -30,3 +30,7 @@ val log : string -> unit
 val logf : ('a, unit, string, unit) format4 -> 'a
 [@@ocaml.deprecated "use `logs`"]
 
+
+include Logs.LOG
+(** Logs for the {!src} above.
+    @since NEXT_RELEASE *)

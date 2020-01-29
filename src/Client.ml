@@ -25,8 +25,6 @@ type mime_data = {
 (* list of mime objects, all of distinct types *)
 type mime_data_bundle = mime_data list
 
-let src = Log.src
-
 module Kernel = struct
   type exec_action =
     | Mime of mime_data_bundle
@@ -155,7 +153,7 @@ let mime_message_content (m:mime_data_bundle) : M.content =
      }))
 
 let send_shell (t:t) ~parent (content:M.content): unit Lwt.t =
-  Logs.debug ~src (fun k->k "send_shell `%s`" (string_of_message content));
+  Log.debug (fun k->k "send_shell `%s`" (string_of_message content));
   let socket = t.sockets.Sockets.shell in
   let msg_type = M.msg_type_of_content content in
   let msg' = M.make ~parent ~msg_type content in
@@ -163,7 +161,7 @@ let send_shell (t:t) ~parent (content:M.content): unit Lwt.t =
 
 (* send a message on the Iopub socket *)
 let send_iopub (t:t) ?parent (m:iopub_message): unit Lwt.t =
-  Logs.debug ~src (fun k->k "send_iopub `%s`" (string_of_iopub_message m));
+  Log.debug (fun k->k "send_iopub `%s`" (string_of_iopub_message m));
   let socket = t.sockets.Sockets.iopub in
   let send_message msg_type content =
     let msg' = match parent with
@@ -256,7 +254,7 @@ let execute_request (t:t) ~parent e : unit Lwt.t =
             er_user_expressions = None;
         }
       in
-      Logs.debug ~src (fun k->k "send ERROR `%s`" (M.json_of_content content));
+      Log.debug (fun k->k "send ERROR `%s`" (M.json_of_content content));
       send_shell t ~parent content
       >>=fun () ->
       send_iopub t ~parent
@@ -299,11 +297,11 @@ let comm_info_request (t:t) ~parent =
   send_shell t ~parent M.Comm_info_reply
 
 let shutdown_request (t:t) ~parent (r:shutdown) : 'a Lwt.t =
-  Logs.info ~src (fun k->k "received shutdown request...");
+  Log.info (fun k->k "received shutdown request...");
   Lwt.catch
       (fun () -> send_shell t ~parent (M.Shutdown_reply r))
       (fun e ->
-         Logs.err ~src (fun k->k "exn %s when replying to shutdown request" (Printexc.to_string e));
+         Log.err (fun k->k "exn %s when replying to shutdown request" (Printexc.to_string e));
          Lwt.return_unit)
   >>= fun () ->
   Lwt.fail (if r.restart then Restart else Exit)
@@ -408,7 +406,7 @@ type run_result =
 
 let run (t:t) : run_result Lwt.t =
   let () = Sys.catch_break true in
-  Logs.debug ~src (fun k->k "run on sockets...");
+  Log.debug (fun k->k "run on sockets...");
   let heartbeat =
     Sockets.heartbeat t.sockets >|= fun () -> Run_stop
   in
@@ -425,7 +423,7 @@ let run (t:t) : run_result Lwt.t =
           M.recv t.sockets.control;
         ]
     >>= fun m ->
-    Logs.debug ~src (fun k->k "received message `%s`, content `%s`"
+    Log.debug (fun k->k "received message `%s`, content `%s`"
       (M.msg_type_of_content m.M.content)
       (M.json_of_content m.M.content));
     begin match m.M.content with
@@ -437,7 +435,7 @@ let run (t:t) : run_result Lwt.t =
         within_status ~parent:m t
           ~f:(fun () -> execute_request t ~parent:m x)
       | M.Connect_request ->
-        Logs.warn ~src (fun k->k "warning: received deprecated connect_request");
+        Log.warn (fun k->k "warning: received deprecated connect_request");
         connect_request t m; Lwt.return_unit
       | M.Inspect_request x ->
         within_status ~parent:m t ~f:(fun () -> inspect_request t ~parent:m x)
@@ -467,13 +465,13 @@ let run (t:t) : run_result Lwt.t =
         (fun () -> handle_message() >|= fun _ -> Ok ())
         (function
         | Sys.Break ->
-          Logs.debug ~src (fun k->k "Sys.Break");
+          Log.debug (fun k->k "Sys.Break");
           Lwt.return_ok ()
         | Restart ->
-          Logs.info ~src (fun k->k "Restart");
+          Log.info (fun k->k "Restart");
           Lwt.return_error Run_restart
         | Exit ->
-          Logs.info ~src (fun k->k "Exiting, as requested");
+          Log.info (fun k->k "Exiting, as requested");
           Lwt.return_error Run_stop
         | e -> Lwt.fail e)
     end >>= function

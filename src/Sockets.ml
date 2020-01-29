@@ -21,7 +21,7 @@ let open_socket typ conn port =
   let socket = ZMQ.Socket.create context typ in
   let addr = addr conn port in
   let () = ZMQ.Socket.bind socket addr in
-  Log.log ("open and bind socket " ^ addr ^ "\n");
+  Log.debug (fun k->k "open and bind socket %s" addr);
   Lwt_zmq.Socket.of_socket socket
 
 let close_socket s =
@@ -38,7 +38,7 @@ type t = {
 
 let open_sockets conn =
   let open Protocol_j in
-  Log.logf "open sockets `%s`\n" (string_of_connection_info conn);
+  Log.debug (fun k->k "open sockets `%s`" (string_of_connection_info conn));
   { shell = open_socket ZMQ.Socket.router conn conn.shell_port;
     control = open_socket ZMQ.Socket.router conn conn.control_port;
     stdin = open_socket ZMQ.Socket.router conn conn.stdin_port;
@@ -55,10 +55,10 @@ let close_sockets (t:t) : unit Lwt.t =
   Lwt.return_unit
 
 let heartbeat (t:t) =
-  Log.log "listening for hearbeat requests\n";
+  Log.debug (fun k->k "listening for hearbeat requests");
   let rec loop() =
     Message.wrap_retry Lwt_zmq.Socket.recv t.heartbeat >>= fun data ->
-    Log.log "Heartbeat\n";
+    Log.debug (fun k->k "Heartbeat received");
     Message.wrap_retry (Lwt_zmq.Socket.send t.heartbeat) data >>= fun () ->
     loop()
   in

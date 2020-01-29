@@ -154,14 +154,12 @@ let rec wrap_retry f s =
       | e -> Lwt.fail e)
 
 let log prefix msg =
-  let open Printf in
-  Log.logf "message %s:\n" prefix;
-  Array.iter (fun id -> Log.log(id ^ "\n")) msg.ids;
-  Log.log ("<IDS|MSG>\n");
-  Log.log (sprintf "  HMAC: %s\n" msg.hmac);
-  Log.log (sprintf "  header: %s\n" (string_of_header_info msg.header));
-  Log.log (sprintf "  parent: %s\n" (string_of_header_info msg.parent));
-  Log.log (sprintf "  content: %s\n" (json_of_content msg.content))
+  Log.debug (fun k->k  "message %s: [%s]" prefix (String.concat";" @@ Array.to_list msg.ids));
+  Log.debug (fun k->k "<IDS|MSG>");
+  Log.debug (fun k->k "  HMAC: %s" msg.hmac);
+  Log.debug (fun k->k "  header: %s" (string_of_header_info msg.header));
+  Log.debug (fun k->k "  parent: %s" (string_of_header_info msg.parent));
+  Log.debug (fun k->k "  content: %s" (json_of_content msg.content))
 
 (*
 let enc_utf8 = Netconversion.convert ~in_enc:`Enc_iso88591 ~out_enc:`Enc_utf8
