@@ -14,12 +14,12 @@ depends: [
     "base-bytes"
     "result"
     "base-unix"
-    "zmq"
+    "zmq" { >= "5.0" & < "6.0" }
+    "zmq-lwt" { >= "5.0" & < "6.0" }
     "atdgen"
     "yojson" { >= "1.6" }
     "uuidm"
     "lwt"
-    "lwt-zmq"
     "digestif"
     "ISO8601"
     "uutf"

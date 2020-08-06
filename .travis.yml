@@ -10,8 +10,6 @@ env:
   - PACKAGE="jupyter-kernel" 
   matrix:
   - OCAML_VERSION="4.03"
-  - OCAML_VERSION="4.04"
     #- PACKAGE="jupyter-kernel" OCAML_VERSION="4.05"
   - OCAML_VERSION="4.06"
-  - OCAML_VERSION="4.07"
-  - OCAML_VERSION="4.09"
+  - OCAML_VERSION="4.10"

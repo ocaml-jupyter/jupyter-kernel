@@ -2,7 +2,7 @@
 (library
   (name jupyter_kernel)
   (public_name jupyter-kernel)
-  (libraries result atdgen yojson uuidm ZMQ lwt-zmq
+  (libraries result atdgen yojson uuidm zmq zmq-lwt
              digestif lwt lwt.unix threads
              bytes uutf ISO8601 logs)
   (flags :standard -safe-string -warn-error -3))

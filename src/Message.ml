@@ -169,7 +169,7 @@ let enc_utf8 x = x
 let dec_utf8 x = x
 
 let recv socket : t Lwt.t =
-  wrap_retry Lwt_zmq.Socket.recv_all socket >>= fun msg ->
+  wrap_retry Zmq_lwt.Socket.recv_all socket >>= fun msg ->
   (*let () =
       Log.log (Printf.sprintf "recv: %i frame(s)\n" (List.length msg));
       List.iter (fun s -> Log.log (s ^ "\n")) msg
@@ -209,7 +209,7 @@ let send ?key socket msg : unit Lwt.t =
       Digestif.SHA256.(hmaci_string ~key:k c |> to_hex)
   in
   (* log "SEND" {msg with hmac}; *)
-  wrap_retry (Lwt_zmq.Socket.send_all socket) (List.concat [
+  wrap_retry (Zmq_lwt.Socket.send_all socket) (List.concat [
       Array.to_list (Array.map enc_utf8 msg.ids);
       [enc_utf8 "<IDS|MSG>"];
       [enc_utf8 hmac];
