@@ -10,12 +10,12 @@
 
 val src : Logs.Src.t
 (** Logs source for jupyter-kernel
-    @since NEXT_RELEASE *)
+    @since 0.6 *)
 
 val file_reporter : string -> Logs.reporter
 [@@ocaml.deprecated "install reporter in your binary, not library"]
 (** Logs reporter that writes into the given file.
-    @since NEXT_RELEASE *)
+    @since 0.6 *)
 
 val open_log_file : string -> unit
 (** Open log file using [Logs].
@@ -33,4 +33,4 @@ val logf : ('a, unit, string, unit) format4 -> 'a
 
 include Logs.LOG
 (** Logs for the {!src} above.
-    @since NEXT_RELEASE *)
+    @since 0.6 *)
