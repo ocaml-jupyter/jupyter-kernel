@@ -407,8 +407,9 @@ type run_result =
 let run (t:t) : run_result Lwt.t =
   let () = Sys.catch_break true in
   Log.debug (fun k->k "run on sockets...");
+  let switch = Lwt_switch.create() in
   let heartbeat =
-    Sockets.heartbeat t.sockets >|= fun () -> Run_stop
+    Sockets.heartbeat ~switch t.sockets >|= fun () -> Run_stop
   in
   send_iopub t
     (Iopub_send_message (M.Status { execution_state = "starting" }))
@@ -416,13 +417,9 @@ let run (t:t) : run_result Lwt.t =
   (* initialize *)
   t.kernel.Kernel.init ()
   >>= fun () ->
-  let handle_message () =
-    let open Sockets in
-    Lwt.pick
-        [ M.recv t.sockets.shell;
-          M.recv t.sockets.control;
-        ]
-    >>= fun m ->
+  let handle_message sock =
+    Lwt_switch.check (Some switch); (* if we're done *)
+    M.recv sock >>= fun m ->
     Log.debug (fun k->k "received message `%s`, content `%s`"
       (M.msg_type_of_content m.M.content)
       (M.json_of_content m.M.content));
@@ -459,23 +456,37 @@ let run (t:t) : run_result Lwt.t =
       | M.Comm_open -> Lwt.return_unit
     end
   in
-  let rec run () =
+  let rec run sock : run_result Lwt.t =
     begin
       Lwt.catch
-        (fun () -> handle_message() >|= fun _ -> Ok ())
+        (fun () ->
+           Lwt_switch.check (Some switch);
+           handle_message sock >|= fun _ -> Ok ())
         (function
+        | Lwt_switch.Off ->
+          Log.debug (fun k->k "switch off");
+          Lwt.return_ok ()
         | Sys.Break ->
           Log.debug (fun k->k "Sys.Break");
+          Lwt_switch.turn_off switch >>= fun () ->
           Lwt.return_ok ()
         | Restart ->
           Log.info (fun k->k "Restart");
+          Lwt_switch.turn_off switch >>= fun () ->
           Lwt.return_error Run_restart
         | Exit ->
           Log.info (fun k->k "Exiting, as requested");
+          Lwt_switch.turn_off switch >>= fun () ->
           Lwt.return_error Run_stop
         | e -> Lwt.fail e)
     end >>= function
-    | Ok () -> run()
+    | Ok () -> run sock
     | Error e -> Lwt.return e
   in
-  Lwt.pick [run (); heartbeat]
+
+  let fut_l = [run t.sockets.shell; run t.sockets.control; heartbeat] in
+
+  let fut_res, p = Lwt.wait () in
+  List.iter (fun fut -> Lwt.on_success fut (fun x -> Lwt.wakeup p x)) fut_l;
+  Lwt.join (List.map (Lwt.map ignore) fut_l) >>= fun () ->
+  fut_res

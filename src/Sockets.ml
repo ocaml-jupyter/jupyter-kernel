@@ -54,9 +54,10 @@ let close_sockets (t:t) : unit Lwt.t =
   close_socket t.heartbeat;
   Lwt.return_unit
 
-let heartbeat (t:t) =
+let heartbeat ?switch (t:t) =
   Log.debug (fun k->k "listening for hearbeat requests");
   let rec loop() =
+    Lwt_switch.check switch;
     Message.wrap_retry Zmq_lwt.Socket.recv t.heartbeat >>= fun data ->
     Log.debug (fun k->k "Heartbeat received");
     Message.wrap_retry (Zmq_lwt.Socket.send t.heartbeat) data >>= fun () ->
