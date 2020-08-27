@@ -207,6 +207,16 @@ type shutdown = {
 }
 
 (*********************************************************************)
+(* kernel interrupt *)
+(*********************************************************************)
+
+(** To get this message, in kernel.json, set "interrupt_mode": "message"
+    (default is "signal" to get SIGINT) *)
+type interrupt = unit
+
+type interrupt_reply = unit
+
+(*********************************************************************)
 (*********************************************************************)
 
 type display_data = {

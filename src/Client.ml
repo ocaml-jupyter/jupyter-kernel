@@ -104,11 +104,12 @@ type t = {
   sockets: Sockets.t;
   key: string option;
   kernel: Kernel.t;
+  mutable active: (int*unit Lwt.t) list; (* in flight queries *)
   mutable e_count: int;
 }
 
 let make ?key sockets kernel : t =
-  { key; sockets; kernel; e_count=0; }
+  { key; sockets; kernel; e_count=0; active=[]; }
 
 type iopub_message =
   | Iopub_send_message of Message.content
@@ -184,15 +185,24 @@ let send_iopub (t:t) ?parent (m:iopub_message): unit Lwt.t =
       send_mime l
   end
 
+let mk_id =
+  let n = ref 0 in
+  fun() -> incr n; !n
+
 (* run [f ()] in a "status:busy" context *)
 let within_status ~parent (t:t) ~f =
   (* set state to busy *)
   send_iopub ~parent t
     (Iopub_send_message (M.Status { execution_state = "busy" }))
   >>= fun () ->
+  let id = mk_id() in
   Lwt.finalize
-    f
     (fun () ->
+       let fut = f() in
+       t.active <- (id,fut) :: t.active;
+       fut)
+    (fun () ->
+       t.active <- List.filter (fun (id',_) -> id<>id') t.active;
        send_iopub ~parent t
          (Iopub_send_message
           (M.Status { execution_state = "idle" })))
@@ -305,6 +315,15 @@ let shutdown_request (t:t) ~parent (r:shutdown) : 'a Lwt.t =
          Lwt.return_unit)
   >>= fun () ->
   Lwt.fail (if r.restart then Restart else Exit)
+
+let interrupt_request (t:t) ~parent () : 'a Lwt.t =
+  Log.info (fun k->k "received interrupt request...");
+  List.iter (fun (_,fut) -> Lwt.cancel fut) t.active;
+  Lwt.catch
+      (fun () -> send_shell t ~parent (M.Interrupt_reply ()))
+      (fun e ->
+         Log.err (fun k->k "exn %s when replying to interrupt request" (Printexc.to_string e));
+         Lwt.return_unit)
 
 let handle_invalid_message () =
   Lwt.fail (Failure "Invalid message on shell socket")
@@ -443,10 +462,11 @@ let run (t:t) : run_result Lwt.t =
       | M.History_request x ->
         within_status ~parent:m t ~f:(fun () -> history_request t ~parent:m x)
       | M.Shutdown_request x -> shutdown_request t ~parent:m x
+      | M.Interrupt_request () -> interrupt_request t ~parent:m ()
 
       (* messages we should not be getting *)
       | M.Connect_reply _ | M.Kernel_info_reply _
-      | M.Shutdown_reply _ | M.Execute_reply _
+      | M.Shutdown_reply _ | M.Execute_reply _ | M.Interrupt_reply _
       | M.Inspect_reply _ | M.Complete_reply _ | M.Is_complete_reply _
       | M.History_reply _ | M.Status _ | M.Execute_input _
       | M.Execute_result _ | M.Stream _ | M.Display_data _

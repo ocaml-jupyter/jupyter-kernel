@@ -16,6 +16,7 @@ type content =
   | Comm_info_request of comm_info_request
   | Kernel_info_request
   | Shutdown_request of shutdown
+  | Interrupt_request of interrupt
   | Execute_request of execute_request
   | Inspect_request of inspect_request
   | Complete_request of complete_request
@@ -26,6 +27,7 @@ type content =
   | Comm_info_reply
   | Kernel_info_reply of kernel_info_reply
   | Shutdown_reply of shutdown
+  | Interrupt_reply of interrupt_reply
   | Execute_reply of execute_reply
   | Inspect_reply of inspect_reply
   | Complete_reply of complete_reply
