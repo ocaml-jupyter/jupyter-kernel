@@ -407,10 +407,11 @@ let history_request t ~parent x =
   let content = {history} in
   send_shell t ~parent (M.History_reply content)
 
-let setup_signal_handlers () =
-  Sys.catch_break true;
+let setup_signal_handlers prom =
+  (* wake future, but not now, we're in the signal handler. *)
+  let on_sig _ = Lwt.wakeup_later prom () in
   let handlesig s =
-    ignore (Lwt_unix.on_signal s (fun _ -> raise Sys.Break) : Lwt_unix.signal_handler_id)
+    ignore (Lwt_unix.on_signal s on_sig : Lwt_unix.signal_handler_id)
   in
   handlesig Sys.sigint;
   handlesig Sys.sigterm
@@ -421,7 +422,13 @@ type run_result =
   | Run_fail of exn
 
 let run (self:t) : run_result Lwt.t =
-  setup_signal_handlers ();
+  (* get this to resolve if ctrl-c is pressed *)
+  let interrupted, interrupt = Lwt.wait() in
+  let interrupted =
+    interrupted >|= fun () -> Run_fail Sys.Break
+  in
+  setup_signal_handlers interrupt;
+
   Log.debug (fun k->k "run on sockets...");
   let heartbeat =
     Sockets.heartbeat self.sockets >|= fun () -> Run_stop
@@ -500,7 +507,7 @@ let run (self:t) : run_result Lwt.t =
     | Error e -> Lwt.return e
   in
   Lwt.catch
-    (fun () -> Lwt.pick [run (); heartbeat])
+    (fun () -> Lwt.pick [run (); heartbeat; interrupted])
     (fun e ->
        Log.err (fun k->k "error: %s" (Printexc.to_string e));
        Lwt.return @@ Run_fail e)
