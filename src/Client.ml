@@ -482,7 +482,11 @@ let run (self:t) : run_result Lwt.t =
     | Ok () -> run()
     | Error e -> Lwt.return e
   in
-  Lwt.pick [run (); heartbeat]
+  Lwt.catch
+    (fun () -> Lwt.pick [run (); heartbeat])
+    (fun e ->
+       Log.err (fun k->k "error: %s" (Printexc.to_string e));
+       Lwt.return Run_stop)
   >>= fun res ->
   Log.debug (fun k->k "call kernel.deinit");
   self.kernel.Kernel.deinit () >>= fun () ->
