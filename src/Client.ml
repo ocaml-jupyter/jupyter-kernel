@@ -417,6 +417,7 @@ let run (self:t) : run_result Lwt.t =
     (Iopub_send_message (M.Status { execution_state = "starting" }))
   >>= fun () ->
   (* initialize *)
+  Log.debug (fun k->k "call kernel.init");
   self.kernel.Kernel.init ()
   >>= fun () ->
   let handle_message () =
@@ -483,6 +484,7 @@ let run (self:t) : run_result Lwt.t =
   in
   Lwt.pick [run (); heartbeat]
   >>= fun res ->
+  Log.debug (fun k->k "call kernel.deinit");
   self.kernel.Kernel.deinit () >>= fun () ->
   Lwt.return res
 
