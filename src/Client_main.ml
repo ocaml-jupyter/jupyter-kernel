@@ -86,7 +86,11 @@ let main_loop connection_info kernel =
       Sockets.close_sockets sockets
     | C.Run_restart ->
       Log.info (fun k->k "Done (restart).");
-      Sockets.close_sockets sockets)
+      Sockets.close_sockets sockets
+    | C.Run_fail e ->
+      Log.err (fun k->k "Done (failure: %s)." (Printexc.to_string e));
+      Sockets.close_sockets sockets
+    )
     (fun e ->
       Log.err (fun k->k "Exception: %s" (Printexc.to_string e));
       Log.err (fun k->k "Dying.");

@@ -117,5 +117,6 @@ val make : ?key:string -> Sockets.t -> Kernel.t -> t
 type run_result =
   | Run_stop
   | Run_restart
+  | Run_fail of exn
 
 val run : t -> run_result Lwt.t
