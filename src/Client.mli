@@ -64,8 +64,12 @@ module Kernel : sig
 
   val ok : ?actions:exec_action list -> string option -> exec_status_ok
 
-  type t = {
+  type t = private {
     init: unit -> unit Lwt.t;
+    deinit: unit -> unit Lwt.t;
+    (** Called before stopping the kernel.
+        @since 0.8 *)
+
     exec: count:int -> string -> exec_status_ok or_error Lwt.t; (* TODO: user expressions *)
     is_complete: string -> is_complete_reply Lwt.t;
     language: string;
@@ -78,6 +82,14 @@ module Kernel : sig
     inspect: inspect_request -> inspect_reply_ok or_error Lwt.t;
     history: history_request -> string list Lwt.t;
   }
+(** Type of Jupyter kernels.
+
+    A kernel is responsible for running snippets of code from cells in
+    a notebook, or command line statements. It can also answer
+    semantic queries such as completion, inspection, etc.
+
+    The type is a private alias as off 0.8. Use {!make} to build.
+*)
 
   val make :
     ?banner:string ->
@@ -85,6 +97,7 @@ module Kernel : sig
     ?mime_type:string ->
     ?codemirror_mode:string ->
     ?init:(unit -> unit Lwt.t) ->
+    ?deinit:(unit -> unit Lwt.t) ->
     ?is_complete:(string -> is_complete_reply Lwt.t) ->
     ?complete:(pos:int -> string -> completion_status Lwt.t) ->
     ?inspect: (inspect_request -> inspect_reply_ok or_error Lwt.t) ->
@@ -94,6 +107,7 @@ module Kernel : sig
     exec:(count:int -> string -> exec_status_ok or_error Lwt.t) ->
     unit ->
     t
+  (** Make a kernel *)
 end
 
 type t

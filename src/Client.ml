@@ -67,6 +67,7 @@ module Kernel = struct
 
   type t = {
     init: unit -> unit Lwt.t;
+    deinit: unit -> unit Lwt.t;
     exec: count:int -> string -> exec_status_ok or_error Lwt.t; (* TODO: user expressions *)
     is_complete: string -> is_complete_reply Lwt.t;
     language: string;
@@ -86,6 +87,7 @@ module Kernel = struct
       ?mime_type
       ?codemirror_mode
       ?(init=fun () -> Lwt.return_unit)
+      ?(deinit=fun () -> Lwt.return_unit)
       ?(is_complete=fun _ -> Lwt.return Is_complete)
       ?(complete=fun ~pos _i ->
         Lwt.return {completion_matches=[]; completion_start=pos;completion_end=pos})
@@ -96,7 +98,8 @@ module Kernel = struct
       ~exec
       () : t =
     { banner; file_extension; mime_type; language; language_version;
-      is_complete; history; exec; complete; inspect; init; codemirror_mode
+      is_complete; history; exec; complete; inspect;
+      init; deinit; codemirror_mode;
     }
 end
 
@@ -404,23 +407,23 @@ type run_result =
   | Run_stop
   | Run_restart
 
-let run (t:t) : run_result Lwt.t =
+let run (self:t) : run_result Lwt.t =
   let () = Sys.catch_break true in
   Log.debug (fun k->k "run on sockets...");
   let heartbeat =
-    Sockets.heartbeat t.sockets >|= fun () -> Run_stop
+    Sockets.heartbeat self.sockets >|= fun () -> Run_stop
   in
-  send_iopub t
+  send_iopub self
     (Iopub_send_message (M.Status { execution_state = "starting" }))
   >>= fun () ->
   (* initialize *)
-  t.kernel.Kernel.init ()
+  self.kernel.Kernel.init ()
   >>= fun () ->
   let handle_message () =
     let open Sockets in
     Lwt.pick
-        [ M.recv t.sockets.shell;
-          M.recv t.sockets.control;
+        [ M.recv self.sockets.shell;
+          M.recv self.sockets.control;
         ]
     >>= fun m ->
     Log.debug (fun k->k "received message `%s`, content `%s`"
@@ -428,24 +431,24 @@ let run (t:t) : run_result Lwt.t =
       (M.json_of_content m.M.content));
     begin match m.M.content with
       | M.Kernel_info_request ->
-        within_status ~parent:m t
-          ~f:(fun () -> kernel_info_request t ~parent:m)
-      | M.Comm_info_request _r -> comm_info_request t ~parent:m
+        within_status ~parent:m self
+          ~f:(fun () -> kernel_info_request self ~parent:m)
+      | M.Comm_info_request _r -> comm_info_request self ~parent:m
       | M.Execute_request x ->
-        within_status ~parent:m t
-          ~f:(fun () -> execute_request t ~parent:m x)
+        within_status ~parent:m self
+          ~f:(fun () -> execute_request self ~parent:m x)
       | M.Connect_request ->
         Log.warn (fun k->k "warning: received deprecated connect_request");
-        connect_request t m; Lwt.return_unit
+        connect_request self m; Lwt.return_unit
       | M.Inspect_request x ->
-        within_status ~parent:m t ~f:(fun () -> inspect_request t ~parent:m x)
+        within_status ~parent:m self ~f:(fun () -> inspect_request self ~parent:m x)
       | M.Complete_request x ->
-        within_status ~parent:m t ~f:(fun () -> complete_request t ~parent:m x)
+        within_status ~parent:m self ~f:(fun () -> complete_request self ~parent:m x)
       | M.Is_complete_request x ->
-        within_status ~parent:m t ~f:(fun () -> is_complete_request t ~parent:m x)
+        within_status ~parent:m self ~f:(fun () -> is_complete_request self ~parent:m x)
       | M.History_request x ->
-        within_status ~parent:m t ~f:(fun () -> history_request t ~parent:m x)
-      | M.Shutdown_request x -> shutdown_request t ~parent:m x
+        within_status ~parent:m self ~f:(fun () -> history_request self ~parent:m x)
+      | M.Shutdown_request x -> shutdown_request self ~parent:m x
 
       (* messages we should not be getting *)
       | M.Connect_reply _ | M.Kernel_info_reply _
@@ -459,7 +462,7 @@ let run (t:t) : run_result Lwt.t =
       | M.Comm_open -> Lwt.return_unit
     end
   in
-  let rec run () =
+  let rec run (): run_result Lwt.t =
     begin
       Lwt.catch
         (fun () -> handle_message() >|= fun _ -> Ok ())
@@ -479,3 +482,7 @@ let run (t:t) : run_result Lwt.t =
     | Error e -> Lwt.return e
   in
   Lwt.pick [run (); heartbeat]
+  >>= fun res ->
+  self.kernel.Kernel.deinit () >>= fun () ->
+  Lwt.return res
+
