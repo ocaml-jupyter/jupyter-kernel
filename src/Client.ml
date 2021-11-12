@@ -403,13 +403,21 @@ let history_request t ~parent x =
   let content = {history} in
   send_shell t ~parent (M.History_reply content)
 
+let setup_signal_handlers () =
+  Sys.catch_break true;
+  let handlesig s =
+    ignore (Lwt_unix.on_signal s (fun _ -> raise Sys.Break) : Lwt_unix.signal_handler_id)
+  in
+  handlesig Sys.sigint;
+  handlesig Sys.sigterm
+
 type run_result =
   | Run_stop
   | Run_restart
   | Run_fail of exn
 
 let run (self:t) : run_result Lwt.t =
-  let () = Sys.catch_break true in
+  setup_signal_handlers ();
   Log.debug (fun k->k "run on sockets...");
   let heartbeat =
     Sockets.heartbeat self.sockets >|= fun () -> Run_stop
