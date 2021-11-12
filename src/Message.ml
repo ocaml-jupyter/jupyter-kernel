@@ -17,6 +17,7 @@ type content =
   | Comm_info_request of comm_info_request
   | Kernel_info_request
   | Shutdown_request of shutdown
+  | Interrupt_request
   | Execute_request of execute_request
   | Inspect_request of inspect_request
   | Complete_request of complete_request
@@ -27,6 +28,7 @@ type content =
   | Comm_info_reply
   | Kernel_info_reply of kernel_info_reply
   | Shutdown_reply of shutdown
+  | Interrupt_reply of interrupt_reply
   | Execute_reply of execute_reply
   | Inspect_reply of inspect_reply
   | Complete_reply of complete_reply
@@ -50,6 +52,7 @@ let content_of_json hdr c =
     | "kernel_info_request" -> Kernel_info_request
     | "shutdown_request" -> Shutdown_request(shutdown_of_string c)
     | "execute_request" -> Execute_request(execute_request_of_string c)
+    | "interrupt_request" -> Interrupt_request
     | "inspect_request" -> Inspect_request (inspect_request_of_string c)
     | "complete_request" -> Complete_request(complete_request_of_string c)
     | "is_complete_request" -> Is_complete_request (is_complete_request_of_string c)
@@ -59,6 +62,7 @@ let content_of_json hdr c =
     | "comm_info_reply" -> Comm_info_reply
     | "kernel_info_reply" -> Kernel_info_reply(kernel_info_reply_of_string c)
     | "shutdown_reply" -> Shutdown_reply(shutdown_of_string c)
+    | "interrupt_reply" -> Interrupt_reply (interrupt_reply_of_string c)
     | "execute_reply" -> Execute_reply(execute_reply_of_string c)
     | "inspect_reply" -> Inspect_reply (inspect_reply_of_string c)
     | "complete_reply" -> Complete_reply(complete_reply_of_string c)
@@ -79,6 +83,7 @@ let json_of_content = function
   | Comm_info_request(x) -> string_of_comm_info_request x
   | Kernel_info_request -> "{}"
   | Shutdown_request(x) -> string_of_shutdown x
+  | Interrupt_request -> "{}"
   | Execute_request(x) -> string_of_execute_request x
   | Inspect_request (x) -> string_of_inspect_request x
   | Complete_request(x) -> string_of_complete_request x
@@ -89,6 +94,7 @@ let json_of_content = function
   | Comm_info_reply -> "{\"comms\": {}}"
   | Kernel_info_reply(x) -> string_of_kernel_info_reply x
   | Shutdown_reply(x) -> string_of_shutdown x
+  | Interrupt_reply x -> string_of_interrupt_reply x
   | Execute_reply(x) -> string_of_execute_reply x
   | Inspect_reply (x) -> string_of_inspect_reply x
   | Complete_reply(x) -> string_of_complete_reply x
@@ -110,6 +116,7 @@ let msg_type_of_content = function
   | Comm_info_request(_) -> "comm_info_request"
   | Kernel_info_request -> "kernel_info_request"
   | Shutdown_request(_) -> "shutdown_request"
+  | Interrupt_request -> "interrupt_request"
   | Execute_request(_) -> "execute_request"
   | Inspect_request (_) -> "inspect_request"
   | Complete_request(_) -> "complete_request"
@@ -120,6 +127,7 @@ let msg_type_of_content = function
   | Comm_info_reply  -> "comm_info_reply"
   | Kernel_info_reply(_) -> "kernel_info_reply"
   | Shutdown_reply(_) -> "shutdown_reply"
+  | Interrupt_reply _ -> "interrupt_reply"
   | Execute_reply(_) -> "execute_reply"
   | Inspect_reply (_) -> "inspect_reply"
   | Complete_reply(_) -> "complete_reply"

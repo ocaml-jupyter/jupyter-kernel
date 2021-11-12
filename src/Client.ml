@@ -309,6 +309,10 @@ let shutdown_request (t:t) ~parent (r:shutdown) : 'a Lwt.t =
   >>= fun () ->
   Lwt.fail (if r.restart then Restart else Exit)
 
+let interrupt_request (t:t) ~parent : unit Lwt.t =
+  Log.info (fun k->k "received interrupt request...");
+  send_shell t ~parent (M.Interrupt_reply {status="ok"})
+
 let handle_invalid_message () =
   Lwt.fail (Failure "Invalid message on shell socket")
 
@@ -459,10 +463,11 @@ let run (self:t) : run_result Lwt.t =
       | M.History_request x ->
         within_status ~parent:m self ~f:(fun () -> history_request self ~parent:m x)
       | M.Shutdown_request x -> shutdown_request self ~parent:m x
+      | M.Interrupt_request -> interrupt_request self ~parent:m
 
       (* messages we should not be getting *)
       | M.Connect_reply _ | M.Kernel_info_reply _
-      | M.Shutdown_reply _ | M.Execute_reply _
+      | M.Shutdown_reply _ | M.Execute_reply _ | M.Interrupt_reply _
       | M.Inspect_reply _ | M.Complete_reply _ | M.Is_complete_reply _
       | M.History_reply _ | M.Status _ | M.Execute_input _
       | M.Execute_result _ | M.Stream _ | M.Display_data _
