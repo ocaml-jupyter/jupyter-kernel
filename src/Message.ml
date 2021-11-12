@@ -228,7 +228,7 @@ let make ~parent ~msg_type content = {
     header={
       parent.header with
             version = "5.0";
-            date = ISO8601.Permissive.string_of_datetime (Unix.gettimeofday());
+            date = Ptime.to_rfc3339 ~space:false (Ptime_clock.now ());
             msg_type;
             msg_id = mk_id();
     };

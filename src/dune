@@ -4,8 +4,8 @@
   (public_name jupyter-kernel)
   (libraries result atdgen yojson uuidm zmq zmq-lwt
              digestif lwt lwt.unix threads
-             bytes uutf ISO8601 logs)
-  (flags :standard -safe-string -warn-error -3))
+             bytes uutf ptime ptime.clock.os logs)
+  (flags :standard -safe-string -warn-error -a+8))
 
 (rule
  (targets Protocol_j.ml Protocol_j.mli)
