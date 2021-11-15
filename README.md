@@ -20,3 +20,7 @@ If you are looking for a *Jupyter kernel for OCaml*, try one of these:
 - https://github.com/KKostya/simple_jucaml
 - https://github.com/andrewray/iocaml
 - https://github.com/akabe/ocaml-jupyter
+
+## License
+
+BSD2

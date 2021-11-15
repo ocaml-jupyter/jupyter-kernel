@@ -3,6 +3,7 @@ name: "jupyter-kernel"
 version: "0.8"
 authors: ["Simon Cruanes" "Andrew Ray"]
 maintainer: "simon.cruanes.2007@m4x.org"
+license: "BSD-2-Clause"
 synopsis: "Library to write jupyter kernels (interactive notebooks)"
 build: [
   ["dune" "build" "@install" "-p" name "-j" jobs]
@@ -20,7 +21,7 @@ depends: [
     "yojson" { >= "1.6" }
     "uuidm"
     "lwt"
-    "digestif"
+    "digestif" { >= "0.7.2" }
     "ptime"
     "uutf"
     "logs"
