@@ -24,7 +24,7 @@ depends: [
     "ptime"
     "uutf"
     "logs"
-    "ocaml" {>= "4.03"}
+    "ocaml" {>= "4.08"}
 ]
 depopts: [
   "tyxml"
