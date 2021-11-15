@@ -4,6 +4,7 @@ A library for writing [Jupyter](https://jupyter.org) kernels in OCaml.
 
 ## Docs
 
+- [dev](dev/)
 - [0.5](0.5)
 - [0.4](0.4)
 
