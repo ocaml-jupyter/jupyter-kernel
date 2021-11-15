@@ -1,6 +1,4 @@
-# Jupyter-Kernel
-
-[![build status](https://travis-ci.org/ocaml-jupyter/jupyter-kernel.svg?branch=master)](https://travis-ci.org/ocaml-jupyter/jupyter-kernel)
+# Jupyter-Kernel [![build](https://github.com/ocaml-jupyter/jupyter-kernel/actions/workflows/main.yml/badge.svg)](https://github.com/ocaml-jupyter/jupyter-kernel/actions/workflows/main.yml)
 
 A library for writing [Jupyter](https://jupyter.org) kernels in OCaml
 
