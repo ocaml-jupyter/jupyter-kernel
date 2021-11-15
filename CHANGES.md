@@ -1,4 +1,11 @@
 
+## 0.8
+
+- handle sigint/sigterm
+- reify exceptions from kernel with `Run_fail`
+- add `deinit` to kernel, called before exiting
+- replace ISO8601 with ptime (and rfc3339 printing)
+
 ## 0.7
 
 - upgrade to more recent versions of zmq/zmq-lwt
