@@ -12,9 +12,9 @@ jobs:
       - uses: actions/checkout@main
 
       - name: Use OCaml
-         uses: ocaml/setup-ocaml@v2
-         with:
-           ocaml-compiler: '4.12.x'
+        uses: ocaml/setup-ocaml@v2
+        with:
+          ocaml-compiler: '4.12.x'
 
       - name: Pin
         run: opam pin -n .
