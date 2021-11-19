@@ -18,7 +18,7 @@ depends: [
     "zmq" { >= "5.0" & < "6.0" }
     "zmq-lwt" { >= "5.0" & < "6.0" }
     "atdgen"
-    "yojson" { >= "1.6" }
+    "yojson" { >= "1.7" }
     "uuidm"
     "lwt"
     "digestif" { >= "0.7.2" }
