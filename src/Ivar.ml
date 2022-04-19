@@ -40,6 +40,7 @@ let create () =
 let lock_ = Mutex.create() (* shared for immediate ivars *)
 
 let return x = {lock=lock_; st=Done (Ok x)}
+let return_res x = {lock=lock_; st=Done x}
 let fail err = {lock=lock_; st=Done (Error err)}
 
 let resolve_ self x =

@@ -12,6 +12,8 @@ val is_done : _ t -> bool
 
 val create : unit -> ('a, 'err) t * ('a, 'err) resolver
 
+val return_res : ('a, 'err) result -> ('a, 'err) t
+
 val return : 'a -> ('a, _) t
 
 val fail : 'err -> (_,'err) t
