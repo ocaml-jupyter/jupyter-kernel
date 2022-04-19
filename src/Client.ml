@@ -20,6 +20,8 @@ type run_result =
 
 exception E_res of run_result
 
+let trigger_restart () = raise (E_res (Run_restart))
+
 type t = {
   sockets: Sockets.t;
   key: string option;

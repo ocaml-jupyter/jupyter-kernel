@@ -10,6 +10,9 @@ type t
 
 val make : ?key:string -> Sockets.t -> Kernel.t -> t
 
+val trigger_restart : unit -> 'a
+(** Raise an exception to ask Jupyter to restart the kernel *)
+
 type run_result =
   | Run_stop
   | Run_restart
