@@ -6,3 +6,5 @@ module Client_main = Client_main
 module Kernel = Kernel
 module Log = Log
 
+include Kernel
+
