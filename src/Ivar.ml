@@ -43,7 +43,7 @@ let return x = {lock=lock_; st=Done (Ok x)}
 let return_res x = {lock=lock_; st=Done x}
 let fail err = {lock=lock_; st=Done (Error err)}
 
-let resolve_ self x =
+let resolve self x =
   let cbs =
     let@ () = with_lock_ self in
     match self.st with
@@ -55,5 +55,14 @@ let resolve_ self x =
   (* execute callbacks outside the lock *)
   List.iter (fun f -> f x) cbs
 
-let[@inline] resolve_ok self x = resolve_ self (Ok x)
-let[@inline] resolve_err self x = resolve_ self (Error x)
+let[@inline] resolve_ok self x = resolve self (Ok x)
+let[@inline] resolve_err self x = resolve self (Error x)
+
+let spawn_thread f : _ t =
+  let ivar, resolver = create() in
+  let run () =
+    let res = f() in
+    resolve resolver res
+  in
+  ignore (Thread.create run () : Thread.t);
+  ivar
