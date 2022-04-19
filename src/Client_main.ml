@@ -3,7 +3,6 @@
 
 (** {1 Main for Client} *)
 
-open Common_
 module C = Client
 module Proto_j = Protocol_j
 
