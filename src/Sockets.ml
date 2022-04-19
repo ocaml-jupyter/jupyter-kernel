@@ -8,8 +8,6 @@
  *
  *)
 
-open Lwt.Infix
-
 let context = Zmq.Context.create ()
 let () = at_exit
     (fun () -> Zmq.Context.terminate context)
@@ -22,18 +20,17 @@ let open_socket typ conn port =
   let addr = addr conn port in
   let () = Zmq.Socket.bind socket addr in
   Log.debug (fun k->k "open and bind socket %s" addr);
-  Zmq_lwt.Socket.of_socket socket
+  socket
 
-let close_socket s =
-  let s = Zmq_lwt.Socket.to_socket s in
-  Zmq.Socket.close s
+let close_socket s = Zmq.Socket.close s
 
 type t = {
-  shell : [`Router] Zmq_lwt.Socket.t;
-  control : [`Router] Zmq_lwt.Socket.t;
-  stdin : [`Router] Zmq_lwt.Socket.t;
-  iopub : [`Pub] Zmq_lwt.Socket.t;
-  heartbeat: [`Rep ] Zmq_lwt.Socket.t;
+  shell : [`Router] Zmq.Socket.t;
+  control : [`Router] Zmq.Socket.t;
+  stdin : [`Router] Zmq.Socket.t;
+  iopub : [`Pub] Zmq.Socket.t;
+  heartbeat: [`Rep ] Zmq.Socket.t;
+  mutable exit: bool; (* TODO: use atomic *)
 }
 
 let open_sockets conn =
@@ -44,33 +41,25 @@ let open_sockets conn =
     stdin = open_socket Zmq.Socket.router conn conn.stdin_port;
     iopub = open_socket Zmq.Socket.pub conn conn.iopub_port;
     heartbeat = open_socket Zmq.Socket.rep conn conn.hb_port;
+    exit = false;
   }
 
-let close_sockets (t:t) : unit Lwt.t =
-  close_socket t.shell;
-  close_socket t.control;
-  close_socket t.stdin;
-  close_socket t.iopub;
-  close_socket t.heartbeat;
-  Lwt.return_unit
+let close (self:t) : unit =
+  if not self.exit then (
+    self.exit <- true;
+    close_socket self.shell;
+    close_socket self.control;
+    close_socket self.stdin;
+    close_socket self.iopub;
+    close_socket self.heartbeat;
+  )
 
-let heartbeat (t:t) =
+let heartbeat_loop (self:t) =
   Log.debug (fun k->k "listening for hearbeat requests");
-  let rec loop() =
-    Message.wrap_retry Zmq_lwt.Socket.recv t.heartbeat >>= fun data ->
+  while not self.exit do
+    let data = Message.wrap_retry Zmq.Socket.recv self.heartbeat in
     Log.debug (fun k->k "Heartbeat received");
-    Message.wrap_retry (Zmq_lwt.Socket.send t.heartbeat) data >>= fun () ->
-    loop()
-  in
-  loop () >>= fun () ->
-  (* XXX close down properly...we never get here *)
-  Zmq.Socket.close (Zmq_lwt.Socket.to_socket t.heartbeat);
-  Lwt.return ()
-
-let dump name socket =
-  let rec loop () =
-    Message.wrap_retry Message.recv socket >>= fun msg ->
-    let () = Message.log name msg in
-    loop()
-  in
-  loop()
+    Message.wrap_retry (Zmq.Socket.send self.heartbeat) data;
+  done;
+  (* XXX close down properly...we may never get here *)
+  Zmq.Socket.close self.heartbeat

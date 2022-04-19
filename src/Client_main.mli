@@ -18,6 +18,6 @@ returns a config object to be consumed by {!main}.
     - The parameter [additional_args] can contain additional command line arguments.
 *)
 
-val main : config:config -> kernel:Client.Kernel.t -> unit Lwt.t
+val main : config:config -> kernel:Kernel.t -> unit
 (** [main ~config ~kernel] will open a connection using {!Sockets}, and run the passed
-kernel. Run via {!Lwt_main.run} *)
+kernel.  *)

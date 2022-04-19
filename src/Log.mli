@@ -24,13 +24,6 @@ val open_log_file : string -> unit
     and install it yourself.
 *)
 
-val log : string -> unit
-[@@ocaml.deprecated "use `logs`"]
-
-val logf : ('a, unit, string, unit) format4 -> 'a
-[@@ocaml.deprecated "use `logs`"]
-
-
 include Logs.LOG
 (** Logs for the {!src} above.
     @since 0.6 *)

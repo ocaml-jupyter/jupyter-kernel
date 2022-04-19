@@ -12,11 +12,8 @@ build: [
 depends: [
     "dune" { >= "1.1" }
     "odoc" {with-doc}
-    "base-bytes"
-    "result"
     "base-unix"
     "zmq" { >= "5.0" & < "6.0" }
-    "zmq-lwt" { >= "5.0" & < "6.0" }
     "atdgen"
     "yojson" { >= "1.7" }
     "uuidm"

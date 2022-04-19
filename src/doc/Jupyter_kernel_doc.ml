@@ -3,7 +3,7 @@ module Document = Document
 module C = Jupyter_kernel.Client
 module H = Tyxml.Html
 
-type mime_data = Jupyter_kernel.Client.mime_data = {
+type mime_data = Jupyter_kernel.Kernel.mime_data = {
   mime_type: string;
   mime_content: string;
   mime_b64: bool;
@@ -52,6 +52,6 @@ let to_html : Document.t -> [<Html_types.div] H.elt =
   in
   aux ~depth:3
 
-let mime_of_html (h:_ H.elt) : C.mime_data =
+let mime_of_html (h:_ H.elt) : mime_data =
   let s = Format.asprintf "%a@." (H.pp_elt ()) h in
-  {C.mime_type="text/html"; mime_content=s; mime_b64=false}
+  {mime_type="text/html"; mime_content=s; mime_b64=false}

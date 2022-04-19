@@ -3,8 +3,7 @@
 
 (** {1 Main for Client} *)
 
-open Lwt.Infix
-
+open Common_
 module C = Client
 module Proto_j = Protocol_j
 
@@ -25,24 +24,25 @@ let ci_transport = ref "tcp"
 let ci_ip_addr = ref ""
 
 let mk_args ~additional_args () =
-  Arg.(align
-      (additional_args @
-         [
-           "--log", String (Log.open_log_file), " <file> open log file";
-           "--connection-file", Set_string(connection_file_name),
-           " <filename> connection file name";
-           "--init", Set_string(init_file), " <file> load <file> instead of default init file";
-           "--completion", Set(completion), " enable tab completion";
-           "--object-info", Set(object_info), " enable introspection";
-           (* pass connection info through command line *)
-           "--ci-stdin", Set_int(ci_stdin), " (connection info) stdin zmq port";
-           "--ci-iopub", Set_int(ci_iopub), " (connection info) iopub zmq port";
-           "--ci-shell", Set_int(ci_shell), " (connection info) shell zmq port";
-           "--ci-control", Set_int(ci_control), " (connection info) control zmq port";
-           "--ci-heartbeat", Set_int(ci_heartbeat), " (connection info) heartbeat zmq port";
-           "--ci-transport", Set_string(ci_transport), " (connection info) transport";
-           "--ci-ip", Set_string(ci_ip_addr), " (connection info) ip address"
-         ]))
+  let open Arg in
+  align @@
+  additional_args @
+  [
+    "--log", String (Log.open_log_file), " <file> open log file";
+    "--connection-file", Set_string(connection_file_name),
+    " <filename> connection file name";
+    "--init", Set_string(init_file), " <file> load <file> instead of default init file";
+    "--completion", Set(completion), " enable tab completion";
+    "--object-info", Set(object_info), " enable introspection";
+    (* pass connection info through command line *)
+    "--ci-stdin", Set_int(ci_stdin), " (connection info) stdin zmq port";
+    "--ci-iopub", Set_int(ci_iopub), " (connection info) iopub zmq port";
+    "--ci-shell", Set_int(ci_shell), " (connection info) shell zmq port";
+    "--ci-control", Set_int(ci_control), " (connection info) control zmq port";
+    "--ci-heartbeat", Set_int(ci_heartbeat), " (connection info) heartbeat zmq port";
+    "--ci-transport", Set_string(ci_transport), " (connection info) transport";
+    "--ci-ip", Set_string(ci_ip_addr), " (connection info) ip address"
+  ]
 
 let mk_connection_info () : Proto_j.connection_info =
   if !ci_ip_addr <> "" then
@@ -74,27 +74,25 @@ let mk_connection_info () : Proto_j.connection_info =
   )
 
 let main_loop connection_info kernel =
-  Lwt.catch (fun () ->
+  try
     let sockets = Sockets.open_sockets connection_info in
     let key = connection_info.Proto_j.key in
     let key = if key="" then None else Some key in
     let sh = C.make ?key sockets kernel in
-    C.run sh;
-    >>= function
+    match C.run sh with
     | C.Run_stop ->
       Log.info (fun k->k "Done.");
-      Sockets.close_sockets sockets
+      Sockets.close sockets
     | C.Run_restart ->
       Log.info (fun k->k "Done (restart).");
-      Sockets.close_sockets sockets
+      Sockets.close sockets
     | C.Run_fail e ->
       Log.err (fun k->k "Done (failure: %s)." (Printexc.to_string e));
-      Sockets.close_sockets sockets
-    )
-    (fun e ->
-      Log.err (fun k->k "Exception: %s" (Printexc.to_string e));
-      Log.err (fun k->k "Dying.");
-      Lwt.fail Exit)
+      Sockets.close sockets
+  with e ->
+    Log.err (fun k->k "Exception: %s" (Printexc.to_string e));
+    Log.err (fun k->k "Dying.");
+    exit 1
 
 type config = { connection_info: Proto_j.connection_info }
 
@@ -107,7 +105,7 @@ let mk_config ?(additional_args=[]) ~usage () : config =
   { connection_info = mk_connection_info () }
 
 let main ~(config : config) ~kernel =
-  Lwt_io.printf "Starting kernel for `%s`\n" kernel.C.Kernel.language >>= fun () ->
+  Log.info (fun k->k"Starting kernel for `%s`" kernel.Kernel.language);
   Log.info (fun k->k "start main...");
-  main_loop config.connection_info kernel >|= fun () ->
+  main_loop config.connection_info kernel;
   Log.info (fun k->k "client_main: exiting")

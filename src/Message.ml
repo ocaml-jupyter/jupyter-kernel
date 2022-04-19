@@ -8,7 +8,6 @@
  *
  *)
 
-open Lwt.Infix
 open Protocol_j
 
 type content =
@@ -155,11 +154,9 @@ type t = {
 }
 
 let rec wrap_retry f s =
-  Lwt.catch (fun () -> f s)
-    (function
-      | Lwt_unix.Retry
-      | Unix.Unix_error (Unix.EAGAIN, _, _) -> wrap_retry f s
-      | e -> Lwt.fail e)
+  match f s with
+  | exception Unix.Unix_error (Unix.EAGAIN, _, _) -> wrap_retry f s
+  | x -> x
 
 let log prefix msg =
   Log.debug (fun k->k  "message %s: [%s]" prefix (String.concat";" @@ Array.to_list msg.ids));
@@ -176,8 +173,9 @@ let dec_utf8 = Netconversion.convert ~in_enc:`Enc_utf8 ~out_enc:`Enc_iso88591
 let enc_utf8 x = x
 let dec_utf8 x = x
 
-let recv socket : t Lwt.t =
-  wrap_retry Zmq_lwt.Socket.recv_all socket >>= fun msg ->
+(* FIXME: provide a timeout, using Poll + nonblocking socket *)
+let recv socket : t =
+  let msg = wrap_retry (Zmq.Socket.recv_all ~block:true) socket in
   (*let () =
       Log.log (Printf.sprintf "recv: %i frame(s)\n" (List.length msg));
       List.iter (fun s -> Log.log (s ^ "\n")) msg
@@ -203,9 +201,9 @@ let recv socket : t Lwt.t =
     raw = Array.init (len-5) (fun i -> data.(i+5))
   } in
   (* log "RECV" msg; *)
-  Lwt.return msg
+  msg
 
-let send ?key socket msg : unit Lwt.t =
+let send ?key socket msg : unit =
   let content = enc_utf8 (json_of_content msg.content) in
   let header  = enc_utf8 (string_of_header_info msg.header) in
   let parent = enc_utf8 (string_of_header_info msg.parent) in
@@ -217,7 +215,7 @@ let send ?key socket msg : unit Lwt.t =
       Digestif.SHA256.(hmaci_string ~key:k c |> to_hex)
   in
   (* log "SEND" {msg with hmac}; *)
-  wrap_retry (Zmq_lwt.Socket.send_all socket) (List.concat [
+  wrap_retry (Zmq.Socket.send_all ~block:true socket) (List.concat [
       Array.to_list (Array.map enc_utf8 msg.ids);
       [enc_utf8 "<IDS|MSG>"];
       [enc_utf8 hmac];
@@ -228,7 +226,7 @@ let send ?key socket msg : unit Lwt.t =
       Array.to_list (Array.map enc_utf8 msg.raw);
     ])
 
-let mk_id () = Uuidm.(to_string (create `V4))
+let mk_id () = Uuidm.(to_string @@ v `V4)
 
 let make ~parent ~msg_type content = {
   parent with

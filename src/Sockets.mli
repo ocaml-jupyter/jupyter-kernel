@@ -12,18 +12,17 @@
 
     See https://jupyter-client.readthedocs.io/en/latest/messaging.html *)
 
-type t = {
-  shell : [`Router] Zmq_lwt.Socket.t;
-  control : [`Router] Zmq_lwt.Socket.t;
-  stdin : [`Router] Zmq_lwt.Socket.t;
-  iopub : [`Pub] Zmq_lwt.Socket.t;
-  heartbeat: [`Rep ] Zmq_lwt.Socket.t;
+type t = private {
+  shell : [`Router] Zmq.Socket.t;
+  control : [`Router] Zmq.Socket.t;
+  stdin : [`Router] Zmq.Socket.t;
+  iopub : [`Pub] Zmq.Socket.t;
+  heartbeat: [`Rep ] Zmq.Socket.t;
+  mutable exit: bool;
 }
 
 val open_sockets : Protocol_t.connection_info -> t
 
-val close_sockets : t -> unit Lwt.t
+val close : t -> unit
 
-val heartbeat : t -> unit Lwt.t
-
-val dump : string -> [`Router] Zmq_lwt.Socket.t -> unit Lwt.t
+val heartbeat_loop : t -> unit

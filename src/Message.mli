@@ -60,7 +60,7 @@ type t = private {
 
 val log : string -> t -> unit
 
-val recv : [`Router] Zmq_lwt.Socket.t -> t Lwt.t
+val recv : [`Router] Zmq.Socket.t -> t
 
 val make : parent:t -> msg_type:string -> content -> t
 (** make a message with the given type and content, copying header
@@ -69,10 +69,10 @@ val make : parent:t -> msg_type:string -> content -> t
 val make_first : msg_type:string -> content -> t
 (** make a message with the given type and content, with a fresh header *)
 
-val send : ?key:string -> [<`Router|`Pub] Zmq_lwt.Socket.t -> t -> unit Lwt.t
+val send : ?key:string -> [<`Router|`Pub] Zmq.Socket.t -> t -> unit
 (** [send sock msg] sends the message.
     @param key the shared key for signing messages *)
 
 
-val wrap_retry : ('a -> 'b Lwt.t) -> 'a -> 'b Lwt.t
+val wrap_retry : ('a -> 'b) -> 'a -> 'b
 (** Wrapper to retry upon EAGAIN *)
