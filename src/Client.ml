@@ -377,10 +377,10 @@ let forward_msg self sock : unit =
 let run (self:t) : run_result =
 
   setup_signal_handlers self;
-  spawn interrupt_thread self;
+  spawn_thread interrupt_thread self;
 
   Log.debug (fun k->k "run on sockets...");
-  spawn Sockets.heartbeat_loop self.sockets;
+  spawn_thread Sockets.heartbeat_loop self.sockets;
   send_iopub self
     (Iopub_send_message (M.Status { execution_state = "starting" }));
 
@@ -389,8 +389,8 @@ let run (self:t) : run_result =
   self.kernel.Kernel.init ();
 
   (* forward messages from these sockets to [self.incoming] *)
-  spawn (forward_msg self) self.sockets.shell;
-  spawn (forward_msg self) self.sockets.control;
+  spawn_thread (forward_msg self) self.sockets.shell;
+  spawn_thread (forward_msg self) self.sockets.control;
 
   let handle_message m : unit =
     Log.debug (fun k->k "received message `%s`, content `%s`"

@@ -64,5 +64,5 @@ let spawn_thread f : _ t =
     let res = f() in
     resolve resolver res
   in
-  ignore (Thread.create run () : Thread.t);
+  spawn_thread run ();
   ivar
